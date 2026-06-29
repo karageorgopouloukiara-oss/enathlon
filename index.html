@@ -3,48 +3,169 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Enathlon — Tris</title>
-  <link rel="stylesheet" href="../../shared/theme.css">
+  <title>Enathlon</title>
+  <link rel="stylesheet" href="shared/theme.css">
   <style>
-    .wrap { width:100%; max-width:520px; }
-    .topbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
-    .gtitle { text-align:center; font-weight:900; font-size:20px; margin-bottom:12px; }
-    .players { display:flex; gap:12px; margin-bottom:16px; }
-    .pl { flex:1; display:flex; align-items:center; gap:10px; background:var(--panel-2); border:2px solid transparent; border-radius:14px; padding:10px; transition:border-color .2s; }
-    .pl.turn { border-color:var(--lime); }
-    .pl .av { width:40px; height:54px; } .pl .av svg { width:100%; height:100%; }
-    .pl .nm { font-weight:900; font-size:14px; } .pl .mk { font-size:11px; font-weight:800; }
-    .pl .sc { font-size:11px; color:var(--text-mut); font-weight:700; }
-    .vs { align-self:center; font-weight:900; color:#5a7a96; font-size:13px; }
-    .status { text-align:center; font-weight:800; font-size:14px; min-height:22px; margin-bottom:14px; color:#cfe0ec; }
-    .status .hl { color:var(--lime); }
-    .board { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; width:300px; margin:0 auto; }
-    .cell { aspect-ratio:1; background:rgba(255,255,255,0.06); border:2px solid rgba(255,255,255,0.05); border-radius:14px; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:background .15s; }
-    .cell:hover { background:rgba(255,255,255,0.12); }
-    .cell.filled { cursor:default; } .cell.win { background:rgba(199,255,31,0.18); border-color:var(--lime); }
-    .cell svg { width:62%; height:62%; }
-    .footer { display:flex; justify-content:center; gap:10px; margin-top:18px; }
+    /* onboarding */
+    .ob-card { width: 100%; max-width: 480px; min-height: 420px; display: flex; flex-direction: column; }
+    .steps { display: flex; gap: 6px; justify-content: center; margin-bottom: 18px; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #2a4456; }
+    .dot.on { background: var(--keppel); }
+    .screen { display: none; flex: 1; flex-direction: column; align-items: center; text-align: center; }
+    .screen.on { display: flex; }
+    .lock { font-size: 40px; margin-bottom: 6px; }
+    h2 { font-size: 20px; font-weight: 900; margin-bottom: 6px; }
+    p.sub { color: var(--text-mut); font-size: 13px; line-height: 1.5; max-width: 360px; margin-bottom: 18px; }
+    .field { width: 100%; max-width: 320px; margin-bottom: 14px; text-align: left; }
+    .field label { display: block; font-size: 10px; font-weight: 900; color: #7fd4c8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
+    .avail { font-size: 11px; font-weight: 800; margin-top: 5px; min-height: 14px; }
+    .avail.ok { color: var(--keppel); } .avail.no { color: #e07a72; }
+    .pin-inp { letter-spacing: 10px; text-align: center; font-size: 22px; }
+    .btn-link { background: none; border: none; color: #7fd4c8; font-family: inherit; font-weight: 800; font-size: 12px; cursor: pointer; margin-top: 12px; text-decoration: underline; }
+    .btn-back { align-self: flex-start; background: none; border: none; color: #7fa8c4; font-family: inherit; font-weight: 800; font-size: 12px; cursor: pointer; margin-bottom: 6px; }
+    .av-stage { width: 120px; height: 160px; margin-bottom: 8px; } .av-stage svg { width: 100%; height: 100%; }
+    .ag { display: grid; grid-template-columns: repeat(4,1fr); gap: 6px; width: 100%; max-width: 300px; margin-bottom: 12px; }
+    .ab { aspect-ratio: 1; border: 2px solid #2a4456; border-radius: 10px; background: var(--panel-2); font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    .ab.active { border-color: var(--keppel); background: #13344a; }
+    .sw-row { display: flex; gap: 14px; width: 100%; max-width: 300px; margin-bottom: 14px; }
+    .sw-grp { flex: 1; } .sw-grp .lab { font-size: 9px; font-weight: 900; color: #7fd4c8; text-transform: uppercase; margin-bottom: 5px; text-align: left; }
+    .sw { display: flex; flex-wrap: wrap; gap: 5px; } .swatch { width: 22px; height: 22px; border-radius: 6px; cursor: pointer; border: 2px solid transparent; } .swatch.active { border-color: #fff; }
+    .check { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-mut); font-weight: 700; margin-bottom: 16px; cursor: pointer; }
+    .check input { width: 16px; height: 16px; accent-color: var(--keppel); }
+
+    /* lobby */
+    .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+    .gamegrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px,1fr)); gap: 12px; }
+    .gcard { background: var(--panel-2); border: 2px solid transparent; border-radius: 14px; padding: 16px 12px; text-align: center; cursor: pointer; transition: transform .12s, border-color .15s; }
+    .gcard:hover { transform: translateY(-4px); border-color: var(--keppel); }
+    .gcard .ic { font-size: 34px; } .gcard .nm { font-weight: 900; margin-top: 6px; }
+    .gcard .pl { font-size: 10px; color: var(--text-mut); font-weight: 700; margin-top: 2px; }
+    .gcard .soon { font-size: 9px; color: #b5892a; font-weight: 800; margin-top: 4px; }
+    .cols { display: grid; grid-template-columns: 1fr; gap: 16px; margin-top: 18px; }
+    @media (min-width: 720px) { .cols { grid-template-columns: 2fr 1fr; } }
+    .sec-title { font-size: 11px; font-weight: 900; color: var(--text-mut); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+    .list .row { display: flex; align-items: center; gap: 8px; background: var(--panel-2); border-radius: 10px; padding: 8px 10px; margin-bottom: 6px; }
+    .list .row .em { font-size: 18px; } .list .row .nm { font-weight: 800; flex: 1; }
+    .list .row .pts { font-weight: 900; color: var(--keppel); }
+    .me-badge { font-size: 9px; background: var(--bice-blue); padding: 2px 6px; border-radius: 5px; font-weight: 800; }
+    .gear-menu { position: absolute; right: 18px; top: 64px; background: #fff; color: #333; border-radius: 12px; padding: 10px; box-shadow: 0 8px 28px rgba(0,0,0,.4); display: none; flex-direction: column; gap: 8px; min-width: 180px; z-index: 60; }
+    .gear-menu.open { display: flex; }
+    .gear-menu .gm-row { display: flex; justify-content: space-between; align-items: center; }
+    .gear-menu .gm-lbl { font-size: 12px; font-weight: 800; }
+    .gm-btn { width: 100%; padding: 9px; border: none; border-radius: 9px; font-family: inherit; font-weight: 800; font-size: 12px; cursor: pointer; }
+    .gm-edit { background: var(--keppel); color: #06222b; } .gm-out { background: #f0e3e1; color: #a33; }
   </style>
 </head>
 <body>
-  <div class="page center-screen">
-    <div class="panel wrap">
-      <div class="topbar">
-        <div class="logo"><div class="logo-text"><span class="ena">EN</span><span class="thl">Athl</span><span class="on">ON</span></div></div>
-        <button class="btn btn-ghost" onclick="location.href='../../index.html'">‹ <span data-t="lobby"></span></button>
-      </div>
-      <div class="gtitle" data-t="g_tris"></div>
-      <div class="players">
-        <div class="pl turn" id="pYou"><div class="av" id="youAv"></div><div><div class="nm" id="youName"></div><div class="mk" style="color:#3aa0d8">X</div><div class="sc"><span data-t="wins"></span>: <span id="youScore">0</span></div></div></div>
-        <div class="vs" data-t="vs"></div>
-        <div class="pl" id="pOpp"><div class="av" id="oppAv"></div><div><div class="nm">AI</div><div class="mk" style="color:#1FC5A8">O</div><div class="sc"><span data-t="wins"></span>: <span id="oppScore">0</span></div></div></div>
-      </div>
-      <div class="status" id="status"></div>
-      <div class="board" id="board"></div>
-      <div class="footer"><button class="btn btn-primary" id="rematch" data-t="rematch"></button></div>
+
+  <!-- ACCESS GATE -->
+  <div id="gate" class="page center-screen hidden">
+    <div class="panel" style="width:100%;max-width:380px;text-align:center">
+      <div class="logo" style="justify-content:center;margin-bottom:14px"><div class="logo-text"><span class="ena">EN</span><span class="thl">Athl</span><span class="on">ON</span></div></div>
+      <div style="font-size:40px;margin-bottom:6px">🔐</div>
+      <h2 style="font-size:18px;font-weight:900;margin-bottom:6px" data-t="gateTitle"></h2>
+      <p class="sub" style="color:var(--text-mut);font-size:13px;margin-bottom:16px" data-t="gateSub"></p>
+      <input class="inp" id="gateCode" style="text-align:center;margin-bottom:12px" placeholder="••••••">
+      <div class="avail no" id="gateErr" style="min-height:14px;color:#e07a72;font-weight:800;font-size:12px;margin-bottom:8px"></div>
+      <button class="btn btn-primary" style="width:100%" id="gateBtn" data-t="enter"></button>
     </div>
   </div>
+
+  <!-- ONBOARDING -->
+  <div id="onboarding" class="page center-screen hidden">
+    <div class="panel ob-card">
+      <div class="topbar"><div class="logo"><div class="logo-text"><span class="ena">EN</span><span class="thl">Athl</span><span class="on">ON</span></div></div>
+        <div class="lang-row" id="obLang"></div></div>
+      <div class="steps" id="obSteps"></div>
+
+      <div class="screen on" id="s-welcome">
+        <div class="lock">🔒</div>
+        <h2 data-t="welcomeTitle"></h2>
+        <p class="sub" data-t="welcomeSub"></p>
+        <button class="btn btn-primary" style="width:100%;max-width:320px" onclick="OB.go('s-nick')" data-t="firstAccess"></button>
+        <button class="btn-link" onclick="OB.go('s-login')" data-t="haveProfile"></button>
+      </div>
+
+      <div class="screen" id="s-nick">
+        <button class="btn-back" onclick="OB.go('s-welcome')">‹ <span data-t="back"></span></button>
+        <h2 data-t="chooseNick"></h2><p class="sub" data-t="chooseNickSub"></p>
+        <div class="field"><label data-t="nickname"></label>
+          <input class="inp" id="nickInput" maxlength="16" oninput="OB.checkNick()">
+          <div class="avail" id="avail"></div></div>
+        <button class="btn btn-primary" style="width:100%;max-width:320px" id="nickNext" disabled onclick="OB.go('s-pin')" data-t="next"></button>
+      </div>
+
+      <div class="screen" id="s-pin">
+        <button class="btn-back" onclick="OB.go('s-nick')">‹ <span data-t="back"></span></button>
+        <h2 data-t="setPin"></h2><p class="sub" data-t="setPinSub"></p>
+        <div class="field"><label data-t="pin"></label><input class="inp pin-inp" id="pin1" maxlength="4" inputmode="numeric" oninput="OB.checkPin()"></div>
+        <div class="field"><label data-t="confirmPin"></label><input class="inp pin-inp" id="pin2" maxlength="4" inputmode="numeric" oninput="OB.checkPin()"></div>
+        <div class="avail no" id="pinMsg"></div>
+        <button class="btn btn-primary" style="width:100%;max-width:320px" id="pinNext" disabled onclick="OB.go('s-avatar')" data-t="next"></button>
+      </div>
+
+      <div class="screen" id="s-avatar">
+        <button class="btn-back" onclick="OB.go('s-pin')">‹ <span data-t="back"></span></button>
+        <h2 data-t="createAvatar"></h2>
+        <div class="av-stage" id="obAvatar"></div>
+        <div class="ag" id="obGrid"></div>
+        <div class="sw-row">
+          <div class="sw-grp"><div class="lab" data-t="shirt"></div><div class="sw" id="obShirt"></div></div>
+          <div class="sw-grp"><div class="lab" data-t="pants"></div><div class="sw" id="obPants"></div></div>
+        </div>
+        <button class="btn btn-primary" style="width:100%;max-width:320px" onclick="OB.create()" data-t="createProfile"></button>
+      </div>
+
+      <div class="screen" id="s-done">
+        <div class="lock">🎉</div><h2 data-t="profileCreated"></h2>
+        <div class="av-stage" id="doneAvatar" style="width:90px;height:120px"></div>
+        <p class="sub" data-t="rememberNote"></p>
+        <button class="btn btn-primary" style="width:100%;max-width:320px" onclick="OB.enter()" data-t="enterLobby"></button>
+      </div>
+
+      <div class="screen" id="s-login">
+        <button class="btn-back" onclick="OB.go('s-welcome')">‹ <span data-t="back"></span></button>
+        <div class="lock">👋</div><h2 data-t="welcomeBack"></h2><p class="sub" data-t="loginSub"></p>
+        <div class="field"><label data-t="nickname"></label><input class="inp" id="loginNick" maxlength="16"></div>
+        <div class="field"><label data-t="pin"></label><input class="inp pin-inp" id="loginPin" maxlength="4" inputmode="numeric"></div>
+        <label class="check"><input type="checkbox" id="remember" checked> <span data-t="rememberMe"></span></label>
+        <button class="btn btn-primary" style="width:100%;max-width:320px" onclick="OB.login()" data-t="enter"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOBBY -->
+  <div id="lobby" class="page hidden">
+    <div class="topbar">
+      <div class="logo"><div class="logo-text"><span class="ena">EN</span><span class="thl">Athl</span><span class="on">ON</span></div></div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div class="lang-row" id="lobbyLang"></div>
+        <button class="btn btn-ghost" onclick="LB.toggleGear()">⚙️</button>
+      </div>
+    </div>
+    <div class="gear-menu" id="gearMenu">
+      <div class="gm-row"><span class="gm-lbl" data-t="language"></span><div class="lang-row" id="gearLang"></div></div>
+      <button class="gm-btn gm-edit" onclick="location.href='avatar.html'" data-t="editAvatar"></button>
+      <button class="gm-btn gm-out" onclick="LB.logout()" data-t="logout"></button>
+    </div>
+
+    <h3 class="sec-title" data-t="chooseGame"></h3>
+    <div class="gamegrid" id="gameGrid"></div>
+
+    <div class="cols">
+      <div>
+        <h3 class="sec-title" data-t="ongoing"></h3>
+        <div class="list" id="ongoingList"></div>
+      </div>
+      <div>
+        <h3 class="sec-title" data-t="leaderboard"></h3>
+        <div class="list" id="leaderList"></div>
+      </div>
+    </div>
+  </div>
+
   <div class="toast" id="toast"></div>
-  <script type="module" src="tris.js"></script>
+
+  <script type="module" src="shared/main.js"></script>
 </body>
 </html>
