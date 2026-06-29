@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Enathlon — Tris</title>
+  <link rel="stylesheet" href="../../shared/theme.css">
+  <style>
+    .wrap { width:100%; max-width:520px; }
+    .topbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+    .gtitle { text-align:center; font-weight:900; font-size:20px; margin-bottom:12px; }
+    .players { display:flex; gap:12px; margin-bottom:16px; }
+    .pl { flex:1; display:flex; align-items:center; gap:10px; background:var(--panel-2); border:2px solid transparent; border-radius:14px; padding:10px; transition:border-color .2s; }
+    .pl.turn { border-color:var(--lime); }
+    .pl .av { width:40px; height:54px; } .pl .av svg { width:100%; height:100%; }
+    .pl .nm { font-weight:900; font-size:14px; } .pl .mk { font-size:11px; font-weight:800; }
+    .pl .sc { font-size:11px; color:var(--text-mut); font-weight:700; }
+    .vs { align-self:center; font-weight:900; color:#5a7a96; font-size:13px; }
+    .status { text-align:center; font-weight:800; font-size:14px; min-height:22px; margin-bottom:14px; color:#cfe0ec; }
+    .status .hl { color:var(--lime); }
+    .board { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; width:300px; margin:0 auto; }
+    .cell { aspect-ratio:1; background:rgba(255,255,255,0.06); border:2px solid rgba(255,255,255,0.05); border-radius:14px; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:background .15s; }
+    .cell:hover { background:rgba(255,255,255,0.12); }
+    .cell.filled { cursor:default; } .cell.win { background:rgba(199,255,31,0.18); border-color:var(--lime); }
+    .cell svg { width:62%; height:62%; }
+    .footer { display:flex; justify-content:center; gap:10px; margin-top:18px; }
+  </style>
+</head>
+<body>
+  <div class="page center-screen">
+    <div class="panel wrap">
+      <div class="topbar">
+        <div class="logo"><div class="logo-text"><span class="ena">EN</span><span class="thl">Athl</span><span class="on">ON</span></div></div>
+        <button class="btn btn-ghost" onclick="location.href='../../index.html'">‹ <span data-t="lobby"></span></button>
+      </div>
+      <div class="gtitle" data-t="g_tris"></div>
+      <div class="players">
+        <div class="pl turn" id="pYou"><div class="av" id="youAv"></div><div><div class="nm" id="youName"></div><div class="mk" style="color:#3aa0d8">X</div><div class="sc"><span data-t="wins"></span>: <span id="youScore">0</span></div></div></div>
+        <div class="vs" data-t="vs"></div>
+        <div class="pl" id="pOpp"><div class="av" id="oppAv"></div><div><div class="nm">AI</div><div class="mk" style="color:#1FC5A8">O</div><div class="sc"><span data-t="wins"></span>: <span id="oppScore">0</span></div></div></div>
+      </div>
+      <div class="status" id="status"></div>
+      <div class="board" id="board"></div>
+      <div class="footer"><button class="btn btn-primary" id="rematch" data-t="rematch"></button></div>
+    </div>
+  </div>
+  <div class="toast" id="toast"></div>
+  <script type="module" src="tris.js"></script>
+</body>
+</html>
