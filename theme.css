@@ -1,0 +1,73 @@
+/* ===== Enathlon — Brand theme (da Enaon brand guidelines) ===== */
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;800;900&display=swap');
+
+:root {
+  /* Palette Enaon */
+  --bice-blue: #006894;
+  --sea-green: #00A0A3;
+  --keppel:    #1FC5A8;
+  --lime:      #C7FF1F;
+  --jet:       #333333;
+  --dark-blue: #00007A;
+
+  /* UI */
+  --bg:        #1a1a2e;
+  --panel:     #13243a;
+  --panel-2:   #0e1b2b;
+  --text:      #ffffff;
+  --text-mut:  #9fb3c4;
+  --radius:    14px;
+  --font:      'Nunito', system-ui, sans-serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  background: var(--bg);
+  font-family: var(--font);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+
+.page { max-width: 960px; margin: 0 auto; padding: 18px; }
+
+/* Logo */
+.logo { display: flex; align-items: center; gap: 10px; }
+.logo-text { font-weight: 900; font-size: 30px; letter-spacing: -1px; }
+.logo-text .ena, .logo-text .on { color: var(--text); }
+.logo-text .thl { color: var(--lime); font-style: italic; }
+
+/* Buttons */
+.btn { font-family: inherit; font-weight: 800; font-size: 14px; border: none;
+  border-radius: 10px; padding: 11px 16px; cursor: pointer; transition: filter .15s, transform .1s; }
+.btn:active { transform: scale(0.98); }
+.btn-primary { background: var(--keppel); color: #06222b; font-weight: 900; }
+.btn-primary:hover { filter: brightness(1.05); }
+.btn-primary:disabled { opacity: .45; cursor: not-allowed; }
+.btn-ghost { background: rgba(255,255,255,0.1); color: #cfe0ec; }
+.btn-ghost:hover { background: rgba(255,255,255,0.18); }
+
+/* Inputs */
+.inp { width: 100%; padding: 12px 14px; border: 2px solid #2a4456; border-radius: 11px;
+  background: var(--panel-2); color: var(--text); font-family: inherit; font-size: 16px;
+  font-weight: 800; outline: none; }
+.inp:focus { border-color: var(--keppel); }
+
+/* Cards / panels */
+.panel { background: linear-gradient(160deg, var(--panel), var(--panel-2));
+  border-radius: 18px; padding: 22px; box-shadow: 0 10px 40px rgba(0,0,0,0.35); }
+
+/* Lang toggle */
+.lang-row { display: flex; gap: 6px; }
+.lang-btn { font-size: 11px; font-weight: 900; padding: 7px 9px; border: 2px solid transparent;
+  border-radius: 8px; background: rgba(255,255,255,0.1); cursor: pointer; color: var(--text-mut); }
+.lang-btn.active { border-color: var(--keppel); background: var(--keppel); color: #06222b; }
+
+/* Toast */
+.toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+  background: var(--keppel); color: #06222b; font-weight: 800; font-size: 13px; padding: 10px 20px;
+  border-radius: 30px; opacity: 0; transition: all .3s; box-shadow: 0 6px 20px rgba(0,0,0,0.3); z-index: 99; }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+.hidden { display: none !important; }
+.center-screen { min-height: 100%; display: flex; align-items: center; justify-content: center; }

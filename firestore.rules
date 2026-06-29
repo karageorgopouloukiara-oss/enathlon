@@ -1,0 +1,36 @@
+rules_version = '2';
+// =============================================================================
+// Enathlon — Regole Firestore
+// Da incollare in: Firebase Console → Firestore Database → Regole → Pubblica
+//
+// NOTA: l'app non usa login Firebase (l'accesso è protetto dal link segreto +
+// codice). Queste regole permettono lettura/scrittura alle 3 collezioni del
+// gioco con piccoli vincoli di forma, e bloccano tutto il resto.
+// Per un giro di test tra colleghi è sufficiente. Se in futuro vuoi blindare
+// di più, attiva Firebase Authentication (anonimo) e richiedi request.auth!=null.
+// =============================================================================
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /players/{nick} {
+      allow read: if true;
+      allow create, update: if request.resource.data.keys().hasOnly(
+        ['nick','nickKey','pinHash','animal','shirt','pants','points','createdAt']);
+      allow delete: if false;
+    }
+
+    match /matches/{id} {
+      allow read, create, update: if true;
+      allow delete: if false;
+    }
+
+    match /challenges/{id} {
+      allow read, create, delete: if true;
+      allow update: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

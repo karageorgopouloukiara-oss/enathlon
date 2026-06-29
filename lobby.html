@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Enathlon — Sala pausa</title>
+<link rel="stylesheet" href="shared/theme.css">
+<style>
+  .wrapper { display:flex; flex-direction:column; gap:14px; padding:18px; max-width:960px; margin:0 auto; }
+  .logo-bar { display:flex; align-items:center; justify-content:center; padding:6px 0; }
+  .logo-text { font-size:34px; }
+  .room-wrapper { position:relative; background:#0d1117; border-radius:16px; overflow:hidden; }
+  .room-canvas { width:100%; display:block; }
+  .layer { position:absolute; inset:0; }
+  .av-wrap { position:absolute; display:flex; flex-direction:column; align-items:center; cursor:pointer; pointer-events:all; transition:transform .15s; }
+  .av-wrap:hover { transform:scale(1.06); }
+  .av-wrap .av-svg { width:92px; height:148px; } .av-wrap .av-svg svg { width:100%; height:100%; filter:drop-shadow(0 5px 5px rgba(0,0,0,.3)); }
+  .av-name { margin-top:-6px; font-size:11px; font-weight:900; color:#33414a; background:rgba(255,255,255,.7); padding:1px 7px; border-radius:6px; }
+  .av-dropdown { position:absolute; bottom:150px; left:50%; transform:translateX(-50%); background:#fff; border-radius:10px; padding:6px; box-shadow:0 4px 20px rgba(0,0,0,.4); display:none; flex-direction:column; gap:3px; min-width:150px; max-height:210px; overflow-y:auto; z-index:48; }
+  .av-dropdown.open { display:flex; }
+  .ddh { font-size:9px; font-weight:900; color:#999; text-transform:uppercase; letter-spacing:.5px; text-align:center; padding:2px 0 4px; position:sticky; top:0; background:#fff; }
+  .dd-item { font-size:11px; font-weight:800; color:#006894; padding:5px 9px; border-radius:6px; background:#f0f9ff; text-align:left; cursor:pointer; border:1px solid #cce; }
+  .dd-item:hover { background:#006894; color:#fff; } .dd-item.soon { opacity:.5; }
+  .bubble { position:absolute; bottom:155px; left:50%; transform:translateX(-50%) scale(0); transform-origin:bottom center; background:#fff; border-radius:14px; padding:10px 12px; box-shadow:0 8px 24px rgba(0,0,0,.35); width:180px; text-align:center; z-index:50; transition:transform .3s cubic-bezier(.2,.9,.3,1.5); pointer-events:all; }
+  .bubble.show { transform:translateX(-50%) scale(1); }
+  .bubble::after { content:''; position:absolute; bottom:-9px; left:50%; transform:translateX(-50%); border-left:10px solid transparent; border-right:10px solid transparent; border-top:10px solid #fff; }
+  .bubble .bg { font-size:13px; font-weight:900; color:#006894; } .bubble .bw { font-size:11px; font-weight:700; color:#888; margin:1px 0 8px; }
+  .bubble .acts { display:flex; gap:6px; } .bubble .acts button { flex:1; border:none; border-radius:8px; padding:7px 4px; font-family:inherit; font-weight:900; font-size:11px; cursor:pointer; }
+  .acc { background:#1FC5A8; color:#06322a; } .dec { background:#f3e0de; color:#a33; }
+  .poster { position:absolute; pointer-events:all; }
+  .poster-frame { width:100%; height:100%; background:#fff; border:5px solid #5a4632; border-radius:4px; box-shadow:0 6px 16px rgba(0,0,0,.25); overflow:hidden; display:flex; flex-direction:column; }
+  .dart-poster { cursor:crosshair; } .dart-poster:hover .poster-frame { outline:3px solid #C7FF1F; }
+  .poster-title { font-size:9px; font-weight:900; text-align:center; padding:3px 0; letter-spacing:.5px; color:#fff; }
+  .lead-title { background:#006894; color:#fff; font-size:9px; font-weight:900; text-align:center; padding:4px 2px; letter-spacing:.5px; }
+  .lead-list { flex:1; padding:4px; display:flex; flex-direction:column; gap:3px; }
+  .lrow { display:flex; align-items:center; gap:3px; font-size:9px; font-weight:800; color:#23323a; background:#f4f8fb; border-radius:4px; padding:2px 4px; }
+  .lrow.top1 { background:#fff3c4; } .lrow.top2 { background:#eef1f4; } .lrow.top3 { background:#f6e8db; }
+  .lrow .rk { width:13px; font-weight:900; color:#7a8a96; text-align:center; } .lrow .nmn { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; } .lrow .pts { font-weight:900; color:#006894; }
+  .topbar { position:absolute; top:10px; right:10px; display:flex; flex-direction:column; gap:8px; align-items:flex-end; z-index:35; pointer-events:none; }
+  .ctrl { display:flex; gap:6px; background:rgba(255,255,255,.92); padding:6px; border-radius:12px; box-shadow:0 2px 12px rgba(0,0,0,.25); pointer-events:all; align-items:center; }
+  .ctrl .lbl { font-size:9px; font-weight:800; color:#888; padding:0 2px; }
+  .weapon-btn { font-size:18px; width:34px; height:34px; border:2px solid transparent; border-radius:9px; background:#f0f0f0; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+  .weapon-btn.active { border-color:#006894; background:#e0f4ff; } .clear-btn { font-size:15px; }
+  .gear-wrap { position:relative; pointer-events:all; }
+  .gear-btn { font-size:20px; width:40px; height:40px; border:none; border-radius:50%; background:rgba(255,255,255,.92); cursor:pointer; box-shadow:0 2px 12px rgba(0,0,0,.25); display:flex; align-items:center; justify-content:center; transition:transform .3s; }
+  .gear-btn:hover { transform:rotate(60deg); }
+  .gear-menu { position:absolute; top:48px; right:0; background:#fff; border-radius:14px; padding:12px; box-shadow:0 8px 28px rgba(0,0,0,.35); display:none; flex-direction:column; gap:10px; min-width:190px; z-index:60; }
+  .gear-menu.open { display:flex; }
+  .gm-title { font-size:10px; font-weight:900; color:#999; text-transform:uppercase; letter-spacing:1px; padding-bottom:2px; border-bottom:1px solid #eee; }
+  .gm-row { display:flex; align-items:center; justify-content:space-between; gap:8px; } .gm-lbl { font-size:12px; font-weight:800; color:#333; }
+  .gm-btn { width:100%; padding:10px; border:none; border-radius:10px; font-family:inherit; font-size:13px; font-weight:900; cursor:pointer; }
+  .gm-edit { background:#1FC5A8; color:#06222b; } .gm-out { background:#f0e3e1; color:#a33; }
+  .throw-layer { position:absolute; inset:0; pointer-events:none; z-index:19; overflow:hidden; }
+  .projectile { position:absolute; will-change:transform,left,top; font-size:24px; line-height:1; filter:drop-shadow(0 2px 2px rgba(0,0,0,.35)); }
+  .cup-fg { position:absolute; bottom:-6px; left:50%; transform:translateX(-50%); width:150px; pointer-events:all; cursor:pointer; transition:transform .2s; z-index:20; }
+  .cup-fg:hover { transform:translateX(-50%) translateY(-6px); }
+  .cup-badge { position:absolute; top:-2px; right:24px; min-width:24px; height:24px; background:#C7FF1F; color:#1a3a0a; border-radius:50%; font-size:12px; font-weight:900; display:flex; align-items:center; justify-content:center; border:2px solid #0d1117; z-index:22; padding:0 4px; }
+  .cup-badge.hidden { display:none; }
+  .ongoing { position:absolute; bottom:120px; left:50%; transform:translateX(-50%); width:300px; background:#fff; border-radius:14px; box-shadow:0 12px 30px rgba(0,0,0,.45); padding:10px; z-index:46; display:none; pointer-events:all; }
+  .ongoing.show { display:block; } .ongoing h4 { font-size:11px; font-weight:900; color:#006894; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; text-align:center; }
+  .gitem { display:flex; align-items:center; gap:8px; padding:7px 8px; border-radius:9px; background:#f5f8fa; margin-bottom:6px; }
+  .gitem .ic { font-size:18px; } .gitem .info { flex:1; min-width:0; } .gitem .gn { font-size:12px; font-weight:900; color:#23323a; } .gitem .st { font-size:10px; font-weight:700; }
+  .st.your { color:#1a9e7a; } .st.wait { color:#b5892a; }
+  .gitem .res { border:none; background:#006894; color:#fff; font-family:inherit; font-weight:900; font-size:10px; padding:6px 10px; border-radius:7px; cursor:pointer; }
+  .empty { text-align:center; font-size:11px; color:#999; padding:8px; }
+</style>
+</head>
+<body>
+<div class="wrapper">
+  <div class="logo-bar"><div class="logo-text"><span class="ena">EN</span><span class="thl">Athl</span><span class="on">ON</span></div></div>
+
+  <div class="room-wrapper" id="room">
+    <svg class="room-canvas" viewBox="0 0 900 520" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="floorGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#8B7355"/><stop offset="100%" stop-color="#A08060"/></linearGradient>
+        <linearGradient id="machineGrad" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#1a2535"/><stop offset="40%" stop-color="#2C3E50"/><stop offset="100%" stop-color="#1a2535"/></linearGradient>
+        <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#87CEEB"/><stop offset="100%" stop-color="#C5E8F9"/></linearGradient>
+        <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="3" dy="6" stdDeviation="6" flood-color="rgba(0,0,0,0.3)"/></filter>
+        <filter id="softShadow"><feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="rgba(0,0,0,0.2)"/></filter>
+      </defs>
+      <polygon points="150,60 750,60 750,380 150,380" fill="#ffffff"/>
+      <polygon points="0,0 150,60 150,380 0,520" fill="#eef0f1"/>
+      <polygon points="750,60 900,0 900,520 750,380" fill="#e4e7e9"/>
+      <polygon points="0,520 150,380 750,380 900,520" fill="url(#floorGrad)"/>
+      <polygon points="0,0 900,0 750,60 150,60" fill="#f4f5f6"/>
+      <line x1="150" y1="60" x2="150" y2="380" stroke="#dadada" stroke-width="1.5"/>
+      <line x1="750" y1="60" x2="750" y2="380" stroke="#d2d2d2" stroke-width="1.5"/>
+      <polygon points="150,374 750,374 750,385 150,385" fill="#d8d8d8" opacity="0.8"/>
+      <polygon points="0,508 150,374 150,385 0,520" fill="#c4c4c4" opacity="0.7"/>
+      <polygon points="750,374 900,508 900,520 750,385" fill="#c0c0c0" opacity="0.7"/>
+      <g>
+        <polygon points="14,120 96,158 96,300 14,318" fill="#8B7355"/>
+        <polygon points="22,132 88,164 88,292 22,304" fill="url(#skyGrad)"/>
+        <circle cx="70" cy="180" r="11" fill="#FFD700" opacity="0.9"/>
+        <ellipse cx="38" cy="180" rx="13" ry="5" fill="white" opacity="0.85"/><ellipse cx="43" cy="175" rx="8" ry="7" fill="white" opacity="0.85"/>
+        <polygon points="22,220 88,228 88,292 22,304" fill="#5A8A3C"/>
+        <polygon points="34,300 40,250 46,300" fill="#3D6B25"/><polygon points="66,288 71,248 76,288" fill="#3D6B25"/>
+        <line x1="22" y1="218" x2="88" y2="226" stroke="#8B7355" stroke-width="3"/><line x1="55" y1="148" x2="55" y2="298" stroke="#8B7355" stroke-width="3"/>
+        <text id="t-city" x="20" y="316" font-size="8" fill="#fff" font-weight="700">☀ Atene</text>
+      </g>
+      <ellipse cx="450" cy="406" rx="82" ry="13" fill="#3a2e22" opacity="0.35"/>
+      <ellipse cx="225" cy="402" rx="62" ry="11" fill="#3a2e22" opacity="0.3"/>
+      <ellipse cx="678" cy="402" rx="58" ry="11" fill="#3a2e22" opacity="0.3"/>
+      <g transform="translate(0,22)">
+        <circle cx="450" cy="64" r="23" fill="#FFF8E7"/><circle cx="450" cy="64" r="23" fill="none" stroke="#8B7355" stroke-width="4"/>
+        <line id="hHour" x1="450" y1="64" x2="450" y2="52" stroke="#333" stroke-width="3" stroke-linecap="round"/>
+        <line id="hMin" x1="450" y1="64" x2="450" y2="47" stroke="#555" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="450" cy="64" r="3" fill="#006894"/>
+      </g>
+      <g filter="url(#shadow)" transform="translate(0,26)">
+        <rect x="388" y="86" width="124" height="284" rx="10" fill="url(#machineGrad)"/>
+        <rect x="406" y="104" width="88" height="48" rx="6" fill="#0a1520"/>
+        <text x="450" y="124" text-anchor="middle" font-size="9" fill="#1FC5A8" font-weight="800">ENATHLON</text>
+        <text id="t-coffee" x="450" y="138" text-anchor="middle" font-size="8" fill="#C7FF1F">CAFFÈ</text>
+        <rect x="406" y="192" width="88" height="56" rx="4" fill="#0a1520"/>
+        <rect x="411" y="195" width="78" height="15" rx="3" fill="#111"/><rect x="411" y="211" width="78" height="15" rx="3" fill="#111"/><rect x="411" y="227" width="78" height="15" rx="3" fill="#111"/>
+        <text id="t-d1" x="450" y="206" text-anchor="middle" font-size="8" fill="#cfcfcf">Espresso</text>
+        <text id="t-d2" x="450" y="222" text-anchor="middle" font-size="8" fill="#cfcfcf">Lungo</text>
+        <text id="t-d3" x="450" y="238" text-anchor="middle" font-size="8" fill="#cfcfcf">Americano</text>
+        <rect x="411" y="195" width="78" height="15" rx="3" fill="transparent" style="cursor:pointer" onclick="makeCoffee('espresso')"/>
+        <rect x="411" y="211" width="78" height="15" rx="3" fill="transparent" style="cursor:pointer" onclick="makeCoffee('lungo')"/>
+        <rect x="411" y="227" width="78" height="15" rx="3" fill="transparent" style="cursor:pointer" onclick="makeCoffee('americano')"/>
+        <g id="pour" opacity="0"><rect id="pourStream" x="448" y="300" width="4" height="0" fill="#3a2414" rx="2"/></g>
+        <rect x="382" y="362" width="136" height="14" rx="4" fill="#111"/>
+      </g>
+      <g filter="url(#softShadow)"><rect x="221" y="364" width="8" height="34" fill="#8B7355"/><ellipse cx="225" cy="364" rx="58" ry="13" fill="#A0845C"/></g>
+      <g filter="url(#softShadow)"><rect x="674" y="362" width="8" height="36" fill="#8B7355"/><ellipse cx="678" cy="362" rx="55" ry="13" fill="#A0845C"/></g>
+      <g transform="translate(150,322)"><rect x="0" y="0" width="48" height="42" rx="5" fill="#1FC5A8"/><rect x="4" y="42" width="40" height="12" rx="3" fill="#009B8A"/></g>
+      <g transform="translate(704,320)"><rect x="0" y="0" width="48" height="42" rx="5" fill="#006894"/><rect x="4" y="42" width="40" height="12" rx="3" fill="#004f70"/></g>
+    </svg>
+
+    <div class="topbar">
+      <div class="ctrl gear-wrap" style="background:transparent;box-shadow:none;padding:0;">
+        <button class="gear-btn" id="gearBtn">⚙️</button>
+        <div class="gear-menu" id="gearMenu">
+          <div class="gm-title" id="g-title">Impostazioni</div>
+          <div class="gm-row"><span class="gm-lbl" id="g-lang">Lingua</span><div class="lang-row" id="gearLang"></div></div>
+          <button class="gm-btn gm-edit" id="g-edit" onclick="location.href='avatar.html'">✏️ Modifica avatar</button>
+          <button class="gm-btn gm-out" id="g-out">Esci</button>
+        </div>
+      </div>
+      <div class="ctrl">
+        <span class="lbl" id="t-throw">Lancia:</span>
+        <div class="weapon-btn active" data-w="dart" onclick="selWeapon(this,'dart')">🎯</div>
+        <div class="weapon-btn" data-w="axe" onclick="selWeapon(this,'axe')">🪓</div>
+        <div class="weapon-btn" data-w="knife" onclick="selWeapon(this,'knife')">🔪</div>
+        <div class="weapon-btn clear-btn" id="t-clear" onclick="clearDarts()" title="Svuota">🧹</div>
+      </div>
+    </div>
+
+    <div class="layer" style="pointer-events:none;">
+      <div class="poster dart-poster" style="left:25.5%;top:21%;width:13.5%;height:31%;" onclick="throwWeapon()">
+        <div class="poster-frame">
+          <div class="poster-title" style="background:#c0392b;" data-t="dartTitle">TIRO A SEGNO</div>
+          <div style="flex:1;display:flex;align-items:center;justify-content:center;background:#fafafa;">
+            <svg id="dartboard" width="86%" viewBox="-60 -60 120 120">
+              <circle r="56" fill="#141414"/><circle r="50" fill="#e9e1cf"/>
+              <circle r="42" fill="none" stroke="#2a9d4f" stroke-width="5"/><circle r="28" fill="none" stroke="#c0392b" stroke-width="5"/>
+              <circle r="15" fill="#2a9d4f"/><circle r="8" fill="#c0392b"/><circle r="3.2" fill="#141414"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+      <div class="poster lead-poster" style="right:0.5%;top:13%;width:14%;height:40%;transform:perspective(420px) rotateY(-16deg);">
+        <div class="poster-frame">
+          <div class="lead-title" id="leadTitle">🏆 CLASSIFICA</div>
+          <div class="lead-list" id="leadList"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="throw-layer" id="throwLayer"></div>
+    <div class="layer" id="avatarLayer" style="pointer-events:none;"></div>
+
+    <div class="ongoing" id="ongoing"><h4 id="ongTitle">☕ Partite in corso</h4><div id="ongList"></div></div>
+    <div class="cup-fg" id="cupFg">
+      <div class="cup-badge hidden" id="cupBadge">0</div>
+      <svg viewBox="0 0 200 180" fill="none">
+        <path d="M44 62 L38 150 Q38 172 64 174 L116 174 Q142 172 142 150 L136 62 Z" fill="#fff" stroke="#d0d0d0" stroke-width="2.5"/>
+        <rect x="48" y="108" width="84" height="10" rx="5" fill="#006894"/><circle cx="90" cy="113" r="8" fill="#C7FF1F"/>
+        <ellipse cx="90" cy="62" rx="46" ry="10" fill="#fff" stroke="#ccc" stroke-width="2.5"/>
+        <ellipse id="cupCoffee" cx="90" cy="63" rx="39" ry="7" fill="#5C3317"/>
+        <path d="M142 86 Q178 86 178 120 Q178 154 142 154" stroke="#d0d0d0" stroke-width="11" fill="none" stroke-linecap="round"/>
+        <path d="M142 86 Q170 86 170 120 Q170 154 142 154" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round"/>
+        <ellipse cx="90" cy="176" rx="70" ry="12" fill="#fff" stroke="#d0d0d0" stroke-width="2.5"/>
+      </svg>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { t, getLang, setLang } from './shared/i18n.js';
+import { ANIMALS, avatarSVG } from './shared/avatars.js';
+import { GAMES, gameById } from './shared/games.js';
+import * as auth from './shared/auth.js';
+import * as store from './shared/store.js';
+
+const $ = (s)=>document.querySelector(s);
+function toast(m){ const e=$('#toast'); e.textContent=m; e.classList.add('show'); clearTimeout(window._t); window._t=setTimeout(()=>e.classList.remove('show'),1900); }
+
+if(!store.isAccessGranted()){ location.href='index.html'; }
+const me = await auth.current();
+if(!me){ location.href='index.html'; }
+
+/* ---- clock ---- */
+function clock(){ const n=new Date(); const h=(n.getHours()%12)+n.getMinutes()/60, m=n.getMinutes(); const cx=450,cy=64;
+  const rot=(a,l)=>({x:cx+Math.cos((a-90)*Math.PI/180)*l,y:cy+Math.sin((a-90)*Math.PI/180)*l});
+  const he=rot(h*30,9), me2=rot(m*6,15);
+  $('#hHour').setAttribute('x2',he.x); $('#hHour').setAttribute('y2',he.y);
+  $('#hMin').setAttribute('x2',me2.x); $('#hMin').setAttribute('y2',me2.y); }
+clock(); setInterval(clock,10000);
+
+/* ---- i18n strings (lobby-specifiche) ---- */
+const L = {
+  it:{ city:'☀ Atene', coffee:'CAFFÈ', d1:'Espresso', d2:'Lungo', d3:'Americano', throw:'Lancia:', dartTitle:'TIRO A SEGNO',
+       settings:'Impostazioni', language:'Lingua', edit:'✏️ Modifica avatar', out:'Esci', lead:'🏆 CLASSIFICA',
+       challengeHdr:'Sfidalo a:', challenges:'ti sfida!', accept:'Accetta', decline:'Declina', ongTitle:'☕ Partite in corso',
+       you:'Tu', yourTurn:'È il tuo turno', waiting:'In attesa', resume:'Riprendi', noOng:'Nessuna partita in corso',
+       brewing:'Preparazione…', ready:'pronto!', cleared:'Bersaglio svuotato', sent:(n,g)=>'📨 Sfida a '+g+' inviata a '+n,
+       accepted:g=>'✅ Sfida accettata: '+g, declined:'Sfida declinata', soon:'in arrivo!' },
+  en:{ city:'☀ Athens', coffee:'COFFEE', d1:'Espresso', d2:'Long Black', d3:'Americano', throw:'Throw:', dartTitle:'SHOOTING RANGE',
+       settings:'Settings', language:'Language', edit:'✏️ Edit avatar', out:'Log out', lead:'🏆 LEADERBOARD',
+       challengeHdr:'Challenge to:', challenges:'challenges you!', accept:'Accept', decline:'Decline', ongTitle:'☕ Ongoing games',
+       you:'You', yourTurn:'Your turn', waiting:'Waiting', resume:'Resume', noOng:'No ongoing games',
+       brewing:'Brewing…', ready:'ready!', cleared:'Board cleared', sent:(n,g)=>'📨 '+g+' challenge sent to '+n,
+       accepted:g=>'✅ Challenge accepted: '+g, declined:'Challenge declined', soon:'coming soon!' }
+};
+const tt = (k)=>{ const s=L[getLang()][k]; return s; };
+
+function applyLang(){
+  const s=L[getLang()];
+  $('#t-city').textContent=s.city; $('#t-coffee').textContent=s.coffee;
+  $('#t-d1').textContent=s.d1; $('#t-d2').textContent=s.d2; $('#t-d3').textContent=s.d3;
+  $('#t-throw').textContent=s.throw; $('#t-clear').title=getLang()==='it'?'Svuota':'Clear';
+  document.querySelector('[data-t=dartTitle]').textContent=s.dartTitle;
+  $('#g-title').textContent=s.settings; $('#g-lang').textContent=s.language;
+  $('#g-edit').textContent=s.edit; $('#g-out').textContent=s.out;
+  $('#leadTitle').textContent=s.lead; $('#ongTitle').textContent=s.ongTitle;
+  buildGearLang(); renderLeader(); renderAvatars();
+  document.documentElement.lang=getLang();
+}
+function buildGearLang(){ const c=$('#gearLang'); c.innerHTML='';
+  ['it','en'].forEach(l=>{ const b=document.createElement('div'); b.className='lang-btn'+(getLang()===l?' active':''); b.textContent=l.toUpperCase();
+    b.onclick=()=>{ setLang(l); applyLang(); }; c.appendChild(b); }); }
+
+/* ---- gear ---- */
+$('#gearBtn').onclick=(e)=>{ e.stopPropagation(); $('#gearMenu').classList.toggle('open'); };
+$('#g-out').onclick=()=>{ auth.logout(); location.href='index.html'; };
+document.addEventListener('click',(e)=>{
+  if(!e.target.closest('.gear-wrap')) $('#gearMenu').classList.remove('open');
+  if(!e.target.closest('.av-wrap')) document.querySelectorAll('.av-dropdown').forEach(d=>d.classList.remove('open'));
+  if(!e.target.closest('#cupFg') && !e.target.closest('#ongoing')) $('#ongoing').classList.remove('show');
+});
+
+/* ---- leaderboard ---- */
+async function renderLeader(){
+  const list=$('#leadList'); list.innerHTML='';
+  const lead=await store.leaderboard();
+  lead.slice(0,6).forEach((p,i)=>{ const medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1)+'';
+    const d=document.createElement('div'); d.className='lrow'+(i===0?' top1':i===1?' top2':i===2?' top3':'');
+    d.innerHTML=`<div class="rk">${medal}</div><div>${ANIMALS[p.animal]?.emoji||'🐾'}</div><div class="nmn">${p.nick}</div><div class="pts">${p.points||0}</div>`;
+    list.appendChild(d); });
+  if(!lead.length) list.innerHTML='<div class="empty">—</div>';
+}
+
+/* ---- colleghi (avatar nella sala) ---- */
+const SAMPLE = [
+  { nick:'Sofia', animal:'bear', shirt:'#1FC5A8', pants:'#009B8A' },
+  { nick:'Nikos', animal:'owl',  shirt:'#00A0A3', pants:'#007A7D' },
+  { nick:'Lena',  animal:'cat',  shirt:'#9b59b6', pants:'#6f3a86' },
+];
+const SLOTS = [ {left:'14%',bottom:'21%'}, {left:'5%',bottom:'10%'}, {right:'14%',bottom:'21%'} ];
+let colleagues = [];
+
+async function loadColleagues(){
+  const players = (await store.listPlayers()).filter(p=>p.nick!==me.nick);
+  colleagues = [...players];
+  for(const s of SAMPLE){ if(colleagues.length>=3) break; if(!colleagues.find(c=>c.nick===s.nick)) colleagues.push(s); }
+  colleagues = colleagues.slice(0,3);
+}
+function renderAvatars(){
+  const layer=$('#avatarLayer'); layer.innerHTML='';
+  colleagues.forEach((c,i)=>{
+    const slot=SLOTS[i]; const w=document.createElement('div'); w.className='av-wrap';
+    Object.assign(w.style, slot);
+    w.innerHTML = `<div class="av-dropdown" id="dd${i}"></div><div class="av-svg">${avatarSVG(c)}</div><div class="av-name">${c.nick}</div>`;
+    w.onclick=(e)=>{ e.stopPropagation(); openChallenge(i,c); };
+    layer.appendChild(w);
+  });
+}
+function openChallenge(i,c){
+  document.querySelectorAll('.av-dropdown').forEach(d=>d.classList.remove('open'));
+  const dd=$('#dd'+i); dd.innerHTML='';
+  const hdr=document.createElement('div'); hdr.className='ddh'; hdr.textContent=tt('challengeHdr'); dd.appendChild(hdr);
+  GAMES.forEach(g=>{ const it=document.createElement('div'); it.className='dd-item'+(g.status!=='ready'?' soon':'');
+    it.textContent=`${g.icon} ${t(g.key)}`;
+    it.onclick=async(e)=>{ e.stopPropagation(); dd.classList.remove('open');
+      await store.sendChallenge(g.id, me.nick, c.nick);
+      toast(tt('sent')(c.nick, t(g.key)));
+      if(g.status==='ready'){ setTimeout(()=>location.href=g.path+'?mode=ai&opp='+encodeURIComponent(c.nick),700); }
+    };
+    dd.appendChild(it); });
+  dd.classList.add('open');
+}
+
+/* ---- partite in corso (tazza) + badge ---- */
+async function renderOngoing(){
+  const list=$('#ongList'); list.innerHTML='';
+  const matches=await store.matchesFor(me.nick);
+  if(!matches.length){ list.innerHTML=`<div class="empty">${tt('noOng')}</div>`; }
+  matches.forEach(m=>{ const g=gameById(m.game); const yt=m.turn===me.nick; const opp=m.players.find(p=>p!==me.nick)||'AI';
+    const d=document.createElement('div'); d.className='gitem';
+    d.innerHTML=`<div class="ic">${g?g.icon:'🎮'}</div><div class="info"><div class="gn">${g?t(g.key):m.game} · ${opp}</div><div class="st ${yt?'your':'wait'}">${yt?tt('yourTurn'):tt('waiting')}</div></div><button class="res">${tt('resume')}</button>`;
+    d.querySelector('.res').onclick=()=>{ if(g) location.href=g.path+'?match='+m.id; };
+    list.appendChild(d); });
+}
+async function renderBadge(){
+  const matches=await store.matchesFor(me.nick);
+  const n=matches.filter(m=>m.turn===me.nick).length;
+  const b=$('#cupBadge'); if(n>0){ b.textContent=n; b.classList.remove('hidden'); } else b.classList.add('hidden');
+}
+$('#cupFg').onclick=async(e)=>{ e.stopPropagation(); const o=$('#ongoing'); if(o.classList.contains('show')) o.classList.remove('show'); else { await renderOngoing(); o.classList.add('show'); } };
+
+/* ---- sfide in arrivo (bolla) ---- */
+function showBubble(ch){
+  if(document.querySelector('.bubble')) return;
+  const slotIdx = 0; const w = $('#avatarLayer').children[slotIdx]; if(!w) return;
+  const g=gameById(ch.game);
+  const b=document.createElement('div'); b.className='bubble';
+  b.innerHTML=`<div class="bg">${g?g.icon+' '+t(g.key):ch.game}</div><div class="bw">${ch.from} ${tt('challenges')}</div>`+
+    `<div class="acts"><button class="acc">${tt('accept')}</button><button class="dec">${tt('decline')}</button></div>`;
+  b.onclick=(e)=>e.stopPropagation();
+  w.appendChild(b); requestAnimationFrame(()=>b.classList.add('show'));
+  b.querySelector('.acc').onclick=async()=>{ await store.removeChallenge(ch.id); toast(tt('accepted')(g?t(g.key):ch.game));
+    if(g&&g.status==='ready') setTimeout(()=>location.href=g.path+'?mode=ai&opp='+encodeURIComponent(ch.from),600); else b.remove(); };
+  b.querySelector('.dec').onclick=async()=>{ await store.removeChallenge(ch.id); toast(tt('declined')); b.remove(); };
+}
+
+/* ---- macchina caffè ---- */
+const COFFEE={espresso:{c:'#2e1a0e',n:()=>L[getLang()].d1},lungo:{c:'#4a2a16',n:()=>L[getLang()].d2},americano:{c:'#6b4226',n:()=>L[getLang()].d3}};
+let brewing=false;
+window.makeCoffee=(type)=>{ if(brewing)return; brewing=true; const c=COFFEE[type]; const pour=$('#pour'),st=$('#pourStream');
+  st.setAttribute('fill',c.c); pour.setAttribute('opacity','1'); st.setAttribute('height','0'); let h=0;
+  const g=setInterval(()=>{ h=Math.min(56,h+7); st.setAttribute('height',h); },35);
+  toast(L[getLang()].brewing+' '+c.n());
+  setTimeout(()=>{ clearInterval(g); pour.setAttribute('opacity','0'); st.setAttribute('height','0');
+    $('#cupCoffee').setAttribute('fill',c.c); toast('☕ '+c.n()+' '+L[getLang()].ready); brewing=false; },950);
+};
+
+/* ---- lancio armi ---- */
+let weapon='dart';
+window.selWeapon=(el,w)=>{ weapon=w; document.querySelectorAll('.weapon-btn[data-w]').forEach(b=>b.classList.remove('active')); el.classList.add('active'); };
+function projInner(w){ if(w==='axe')return'🪓'; if(w==='knife')return'🔪'; return '<svg width="22" height="40" viewBox="0 0 22 40"><polygon points="11,0 8,9 14,9" fill="#c0392b"/><rect x="9.5" y="8" width="3" height="20" fill="#2c3e50"/><polygon points="11,26 4,38 11,33 18,38" fill="#e74c3c"/></svg>'; }
+const finalRot={dart:0,axe:35,knife:-25}; const stuck=[];
+window.throwWeapon=()=>{ const layer=$('#throwLayer'),board=$('#dartboard'); const lR=layer.getBoundingClientRect(),bR=board.getBoundingClientRect();
+  const R=Math.min(bR.width,bR.height)/2*0.6, ang=Math.random()*Math.PI*2, dist=Math.random()*R;
+  const tx=bR.left-lR.left+bR.width/2+Math.cos(ang)*dist, ty=bR.top-lR.top+bR.height/2+Math.sin(ang)*dist;
+  const p=document.createElement('div'); p.className='projectile'; p.innerHTML=projInner(weapon);
+  p.style.left=(lR.width/2)+'px'; p.style.top=(lR.height+30)+'px'; p.style.transform='translate(-50%,-50%) scale(2.4) rotate(-300deg)';
+  layer.appendChild(p);
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{ p.style.transition='transform .42s, left .42s, top .42s'; p.style.left=tx+'px'; p.style.top=ty+'px'; p.style.transform='translate(-50%,-50%) scale(.7) rotate('+finalRot[weapon]+'deg)'; }));
+  stuck.push(p); if(stuck.length>20){ stuck.shift().remove(); } };
+window.clearDarts=()=>{ stuck.forEach(p=>p.remove()); stuck.length=0; toast(L[getLang()].cleared); };
+
+/* ---- boot + realtime ---- */
+await loadColleagues();
+applyLang();
+store.subscribePlayers(() => { loadColleagues().then(() => { renderAvatars(); renderLeader(); }); });
+store.subscribeMatchesFor(me.nick, () => { renderOngoing(); renderBadge(); });
+store.subscribeChallengesFor(me.nick, (cs) => { if (cs && cs.length) showBubble(cs[0]); });
+</script>
+</body>
+</html>

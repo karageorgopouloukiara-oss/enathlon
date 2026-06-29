@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Enathlon — Avatar</title>
+  <link rel="stylesheet" href="shared/theme.css">
+  <style>
+    .wrap { width:100%; max-width:520px; }
+    .topbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+    .editor { display:flex; gap:16px; flex-wrap:wrap; }
+    .preview { flex:1 1 180px; background:var(--panel-2); border-radius:14px; padding:16px; display:flex; flex-direction:column; align-items:center; }
+    .stage { width:140px; height:188px; } .stage svg { width:100%; height:100%; }
+    .nd { font-size:18px; font-weight:900; margin-top:6px; } .nt { font-size:11px; color:#7fd4c8; font-weight:700; }
+    .controls { flex:1 1 240px; }
+    .cb { margin-bottom:14px; } .cb label { display:block; font-size:10px; font-weight:900; color:#7fd4c8; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px; }
+    .ag { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; }
+    .ab { aspect-ratio:1; border:2px solid #2a4456; border-radius:10px; background:var(--panel-2); font-size:20px; cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+    .ab span { font-size:7px; font-weight:800; color:var(--text-mut); } .ab.active { border-color:var(--keppel); background:#13344a; }
+    .sw { display:flex; flex-wrap:wrap; gap:6px; } .swatch { width:26px; height:26px; border-radius:7px; cursor:pointer; border:3px solid transparent; } .swatch.active { border-color:#fff; }
+    .row2 { display:flex; gap:14px; flex-wrap:wrap; } .row2 .cb { flex:1 1 110px; }
+  </style>
+</head>
+<body>
+  <div class="page center-screen">
+    <div class="panel wrap">
+      <div class="topbar">
+        <div class="logo"><div class="logo-text"><span class="ena">EN</span><span class="thl">Athl</span><span class="on">ON</span></div></div>
+        <button class="btn btn-ghost" onclick="location.href='index.html'">‹ <span data-t="lobby"></span></button>
+      </div>
+      <div class="editor">
+        <div class="preview">
+          <div class="stage" id="prev"></div>
+          <div class="nd" id="pnick"></div><div class="nt" id="ptag"></div>
+        </div>
+        <div class="controls">
+          <div class="cb"><label data-t="createAvatar"></label><div class="ag" id="grid"></div></div>
+          <div class="row2">
+            <div class="cb"><label data-t="shirt"></label><div class="sw" id="shirt"></div></div>
+            <div class="cb"><label data-t="pants"></label><div class="sw" id="pants"></div></div>
+          </div>
+          <button class="btn btn-primary" style="width:100%" id="saveBtn" data-t="save"></button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="toast" id="toast"></div>
+  <script type="module">
+    import { t, getLang } from './shared/i18n.js';
+    import { ANIMALS, AVATAR_COLORS, avatarSVG } from './shared/avatars.js';
+    import * as auth from './shared/auth.js';
+    import * as store from './shared/store.js';
+    const $=(s)=>document.querySelector(s);
+    function toast(m){const e=$('#toast');e.textContent=m;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),1800);}
+    document.querySelectorAll('[data-t]').forEach(e=>e.textContent=t(e.dataset.t));
+
+    if(!store.isAccessGranted()){ location.href='index.html'; }
+    const me = await auth.current();
+    if(!me){ location.href='index.html'; }
+    const av = { nick:me.nick, animal:me.animal, shirt:me.shirt, pants:me.pants };
+
+    function render(){
+      $('#prev').innerHTML = avatarSVG(av);
+      $('#pnick').textContent = av.nick;
+      $('#ptag').textContent = ANIMALS[av.animal].emoji+' '+ANIMALS[av.animal].label[getLang()];
+    }
+    function grid(){ const g=$('#grid'); g.innerHTML='';
+      Object.entries(ANIMALS).forEach(([k,a])=>{ const b=document.createElement('div'); b.className='ab'+(k===av.animal?' active':'');
+        b.innerHTML=`<div>${a.emoji}</div><span>${a.label[getLang()]}</span>`;
+        b.onclick=()=>{ av.animal=k; grid(); render(); }; g.appendChild(b); }); }
+    function sw(id,key){ const c=$('#'+id); c.innerHTML=''; AVATAR_COLORS.forEach(col=>{ const s=document.createElement('div'); s.className='swatch'+(col===av[key]?' active':''); s.style.background=col;
+      s.onclick=()=>{ av[key]=col; c.querySelectorAll('.swatch').forEach(x=>x.classList.remove('active')); s.classList.add('active'); render(); }; c.appendChild(s); }); }
+    $('#saveBtn').onclick = async () => { await store.updatePlayer(av.nick, { animal:av.animal, shirt:av.shirt, pants:av.pants }); toast('✅'); setTimeout(()=>location.href='index.html',500); };
+
+    grid(); sw('shirt','shirt'); sw('pants','pants'); render();
+  </script>
+</body>
+</html>
