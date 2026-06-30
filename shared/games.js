@@ -1,7 +1,7 @@
 /* ===== Enathlon — Catalogo giochi ===== */
 /* status: 'ready' = pagina implementata · 'soon' = mockup, da portare */
 export const GAMES = [
-  { id:'tris',       icon:'⭕', key:'g_tris',       path:'games/tris/',       players:'1v1',  status:'ready' },
+  { id:'tris',       icon:'⭕', key:'g_tris',       path:'games/tris/',       players:'1v1',  status:'ready', online:true },
   { id:'chess',      icon:'♟',  key:'g_chess',      path:'games/scacchi/',    players:'1v1',  status:'soon' },
   { id:'scrabble',   icon:'🔤', key:'g_scrabble',   path:'games/scrabble/',   players:'1v1',  status:'soon' },
   { id:'battleship', icon:'🚢', key:'g_battleship', path:'games/battaglia-navale/', players:'1v1', status:'soon' },

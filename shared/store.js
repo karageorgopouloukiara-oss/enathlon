@@ -135,8 +135,8 @@ export async function matchesFor(nick) {
 }
 
 /* ===================== CHALLENGES ===================== */
-export async function sendChallenge(game, from, to) {
-  const id = uid(); const data = { id, game, from, to, createdAt: Date.now() };
+export async function sendChallenge(game, from, to, matchId = null) {
+  const id = uid(); const data = { id, game, from, to, matchId, createdAt: Date.now() };
   if (USE_FB) { const { db, fs } = await fb(); await fs.setDoc(fs.doc(db, 'challenges', id), data); return data; }
   const c = lread('challenges', {}); c[id] = data; lwrite('challenges', c); return data;
 }
@@ -192,6 +192,18 @@ export function subscribeChallengesFor(nick, cb) {
     return () => off();
   }
   const run = async () => cb(await challengesFor(nick));
+  window.addEventListener('enathlon-change', run); window.addEventListener('storage', run); run();
+  return () => { window.removeEventListener('enathlon-change', run); window.removeEventListener('storage', run); };
+}
+
+export function subscribeMatch(id, cb) {
+  if (USE_FB) {
+    let off = () => {};
+    fb().then(({ db, fs }) => { off = fs.onSnapshot(fs.doc(db, 'matches', id),
+      s => cb(s.exists() ? s.data() : null)); });
+    return () => off();
+  }
+  const run = async () => cb(await getMatch(id));
   window.addEventListener('enathlon-change', run); window.addEventListener('storage', run); run();
   return () => { window.removeEventListener('enathlon-change', run); window.removeEventListener('storage', run); };
 }

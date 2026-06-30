@@ -307,9 +307,17 @@ function openChallenge(i,c){
   GAMES.forEach(g=>{ const it=document.createElement('div'); it.className='dd-item'+(g.status!=='ready'?' soon':'');
     it.textContent=`${g.icon} ${t(g.key)}`;
     it.onclick=async(e)=>{ e.stopPropagation(); dd.classList.remove('open');
-      await store.sendChallenge(g.id, me.nick, c.nick);
-      toast(tt('sent')(c.nick, t(g.key)));
-      if(g.status==='ready'){ setTimeout(()=>location.href=g.path+'?mode=ai&opp='+encodeURIComponent(c.nick),700); }
+      if(g.status!=='ready'){ toast(t(g.key)+' — '+tt('soon')); return; }
+      if(g.online){
+        // vera partita online: crea match condiviso + invia la sfida col matchId
+        const match = await store.createMatch(g.id, [me.nick, c.nick], { board:['','','','','','','','',''] });
+        await store.sendChallenge(g.id, me.nick, c.nick, match.id);
+        toast(tt('sent')(c.nick, t(g.key)));
+        setTimeout(()=>location.href=g.path+'?match='+match.id, 600);
+      } else {
+        // gioco locale (pass-and-play)
+        setTimeout(()=>location.href=g.path, 200);
+      }
     };
     dd.appendChild(it); });
   dd.classList.add('open');
@@ -344,7 +352,9 @@ function showBubble(ch){
   b.onclick=(e)=>e.stopPropagation();
   w.appendChild(b); requestAnimationFrame(()=>b.classList.add('show'));
   b.querySelector('.acc').onclick=async()=>{ await store.removeChallenge(ch.id); toast(tt('accepted')(g?t(g.key):ch.game));
-    if(g&&g.status==='ready') setTimeout(()=>location.href=g.path+'?mode=ai&opp='+encodeURIComponent(ch.from),600); else b.remove(); };
+    if(g && ch.matchId) setTimeout(()=>location.href=g.path+'?match='+ch.matchId,500);
+    else if(g && g.status==='ready') setTimeout(()=>location.href=g.path,400);
+    else b.remove(); };
   b.querySelector('.dec').onclick=async()=>{ await store.removeChallenge(ch.id); toast(tt('declined')); b.remove(); };
 }
 
