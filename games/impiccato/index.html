@@ -9,31 +9,28 @@
   .wrap { width:100%; max-width:560px; }
   .topbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
   .gtitle { text-align:center; font-weight:900; font-size:20px; margin-bottom:4px; }
+  .duel { text-align:center; font-size:12px; font-weight:800; color:var(--text-mut); margin-bottom:8px; }
   .status { text-align:center; font-weight:800; font-size:14px; min-height:20px; margin-bottom:14px; color:#cfe0ec; }
   .status .hl { color:var(--lime); }
-  .setup { display:flex; flex-direction:column; align-items:center; gap:14px; padding:8px; }
-  .setup p { color:var(--text-mut); font-size:13px; text-align:center; max-width:380px; line-height:1.5; }
+  .screen { display:none; } .screen.on { display:block; }
+  .setup.on, .wait.on, .result.on { display:flex; flex-direction:column; align-items:center; gap:14px; padding:10px; }
+  .setup p, .wait p, .result p { color:var(--text-mut); font-size:13px; text-align:center; max-width:380px; line-height:1.5; }
   .secret { width:280px; text-align:center; letter-spacing:4px; text-transform:uppercase; }
-  .tries { font-size:12px; font-weight:800; color:var(--text-mut); }
-  .play { display:none; } .play.on { display:block; }
   .gamerow { display:flex; gap:18px; justify-content:center; align-items:flex-start; flex-wrap:wrap; }
-  .hpart { opacity:0; transition:opacity .4s; transform-box:fill-box; transform-origin:center; }
-  .hpart.show { opacity:1; } .hpart.just { animation:pop .5s ease; }
+  .hpart { opacity:0; transition:opacity .4s; transform-box:fill-box; transform-origin:center; } .hpart.show { opacity:1; } .hpart.just { animation:pop .5s ease; }
   @keyframes pop { 0%{opacity:0;transform:scale(.4);} 60%{transform:scale(1.15);} 100%{opacity:1;transform:scale(1);} }
   .triesLeft { text-align:center; font-size:12px; font-weight:800; color:var(--text-mut); margin-top:4px; }
   .grid { display:flex; flex-direction:column; gap:5px; align-items:center; }
   .grow { display:flex; gap:5px; }
   .tile { width:38px; height:38px; border:2px solid #2a4456; border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:900; color:#fff; text-transform:uppercase; transition:all .3s; }
-  .tile.filled { border-color:#5a7a96; }
-  .tile.correct { background:var(--keppel); border-color:var(--keppel); color:#06322a; }
-  .tile.present { background:#f1c40f; border-color:#f1c40f; color:#5a4a06; }
-  .tile.absent { background:#2a3a44; border-color:#2a3a44; color:#7f97a8; }
-  .tile.flip { animation:flip .4s ease; } @keyframes flip { 0%{transform:rotateX(0);} 50%{transform:rotateX(90deg);} 100%{transform:rotateX(0);} }
+  .tile.filled { border-color:#5a7a96; } .tile.correct { background:var(--keppel); border-color:var(--keppel); color:#06322a; }
+  .tile.present { background:#f1c40f; border-color:#f1c40f; color:#5a4a06; } .tile.absent { background:#2a3a44; border-color:#2a3a44; color:#7f97a8; }
   .kb { display:flex; flex-direction:column; gap:6px; align-items:center; margin-top:18px; }
   .kbrow { display:flex; gap:5px; }
   .key { min-width:28px; height:42px; padding:0 8px; border:none; border-radius:7px; background:#3a566b; color:#fff; font-family:inherit; font-size:13px; font-weight:800; cursor:pointer; }
   .key.wide { font-size:11px; } .key.correct { background:var(--keppel); color:#06322a; } .key.present { background:#f1c40f; color:#5a4a06; } .key.absent { background:#1c2a33; color:#5f7585; }
-  .footer { display:flex; justify-content:center; gap:8px; margin-top:14px; }
+  .vsbar { display:flex; gap:10px; justify-content:center; margin-bottom:12px; font-size:11px; font-weight:800; }
+  .vsbar .me { color:var(--keppel); } .vsbar .op { color:#7fa8c4; }
   .async-note { text-align:center; font-size:11px; color:#6f93ad; margin-top:12px; font-weight:600; }
 </style>
 </head>
@@ -45,16 +42,26 @@
       <button class="btn btn-ghost" onclick="location.href='../../lobby.html'">‹ <span id="t-lobby"></span></button>
     </div>
     <div class="gtitle" id="t-title"></div>
+    <div class="duel" id="duelInfo"></div>
     <div class="status" id="status"></div>
 
-    <div class="setup" id="setup">
+    <!-- 1) scegli parola per l'avversario -->
+    <div class="screen setup" id="setup">
       <p id="t-setupinfo"></p>
       <input class="inp secret" id="secretIn" maxlength="8" placeholder="PAROLA" oninput="onSecret()">
-      <div class="tries" id="triesInfo"></div>
-      <button class="btn btn-primary" id="startBtn" disabled style="opacity:.5" onclick="start()"></button>
+      <div class="triesLeft" id="setTries"></div>
+      <button class="btn btn-primary" id="setBtn" disabled style="opacity:.5" onclick="sendWord()"></button>
     </div>
 
-    <div class="play" id="play">
+    <!-- 2) attesa che l'avversario scelga la tua parola -->
+    <div class="screen wait" id="wait">
+      <div style="font-size:40px">⏳</div>
+      <p id="t-waitinfo"></p>
+    </div>
+
+    <!-- 3) gioco -->
+    <div class="screen" id="play">
+      <div class="vsbar"><span class="me" id="vsMe"></span> · <span class="op" id="vsOp"></span></div>
       <div class="gamerow">
         <div>
           <svg width="130" height="150" viewBox="0 0 120 150">
@@ -74,8 +81,15 @@
         <div class="grid" id="grid"></div>
       </div>
       <div class="kb" id="kb"></div>
-      <div class="footer"><button class="btn btn-ghost" id="newBtn" onclick="reset()"></button></div>
     </div>
+
+    <!-- 4) risultato -->
+    <div class="screen result" id="result">
+      <div style="font-size:40px" id="resEmoji">🏁</div>
+      <p id="resText" style="font-size:16px;font-weight:900;color:#fff"></p>
+      <button class="btn btn-primary" onclick="location.href='../../lobby.html'" id="t-back2"></button>
+    </div>
+
     <div class="async-note" id="t-async"></div>
   </div>
 </div>
@@ -85,72 +99,128 @@
 import { getLang } from '../../shared/i18n.js';
 import * as auth from '../../shared/auth.js';
 import * as store from '../../shared/store.js';
-
 const $=(s)=>document.querySelector(s);
 function toast(m){const e=$('#toast');e.textContent=m;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),1800);}
+const enc=(w)=>btoa(unescape(encodeURIComponent(w)));
+const dec=(e)=>{ try{ return decodeURIComponent(escape(atob(e))); }catch{ return e; } };
 
 if(!store.isAccessGranted()) location.href='../../index.html';
-const me = await auth.current();
-if(!me) location.href='../../index.html';
+const me = await auth.current(); if(!me) location.href='../../index.html';
+const matchId = new URLSearchParams(location.search).get('match');
+if(!matchId){ location.href='../../lobby.html'; }
 
-const L = {
-  it:{ lobby:'Lobby', title:"L'Impiccato", setup:'Imposta la parola segreta (3-8 lettere), poi passa il dispositivo a chi deve indovinare.',
-       tries:n=>'Tentativi: '+n, start:'Nascondi e gioca', neu:'Nuova partita', guess:'Indovina la parola!',
-       left:n=>n+' tentativi rimasti', win:'🏆 Indovinato!', lose:w=>'💀 Impiccato! La parola era "'+w+'"', enter:'Invio',
-       async:'💤 A turni: uno imposta la parola, l’altro indovina (verde = lettera giusta al posto giusto, giallo = presente).' },
-  en:{ lobby:'Lobby', title:'Hangman', setup:'Set the secret word (3-8 letters), then pass the device to whoever guesses.',
-       tries:n=>'Attempts: '+n, start:'Hide and play', neu:'New game', guess:'Guess the word!',
-       left:n=>n+' attempts left', win:'🏆 You guessed it!', lose:w=>'💀 Hanged! The word was "'+w+'"', enter:'Enter',
-       async:'💤 Turn-based: one sets the word, the other guesses (green = right letter+spot, yellow = present).' }
+const L={
+  it:{ lobby:'Lobby', title:"L'Impiccato — Duello", back:'Torna alla lobby',
+       setupinfo:n=>'Scegli la parola segreta (3-8 lettere) che '+n+' dovrà indovinare.',
+       tries:n=>'Tentativi per indovinarla: '+n, setBtn:'Conferma parola',
+       waitinfo:n=>'Parola inviata! In attesa che '+n+' scelga la parola che dovrai indovinare tu…',
+       guess:'Indovina la parola che ti ha assegnato l\'avversario!', left:n=>n+' tentativi rimasti',
+       meTag:'Tu indovini', opTag:n=>n+' indovina', enter:'Invio',
+       solvedWait:n=>'✅ Indovinato! In attesa che '+n+' finisca…', failedWait:n=>'💀 Impiccato! In attesa che '+n+' finisca…',
+       win:'🏆 Hai vinto il duello!', lose:'😔 Hai perso il duello.', draw:'🤝 Pareggio!',
+       async:'Duello online: ognuno indovina la parola scelta dall\'altro. Vince chi la trova in meno tentativi.' },
+  en:{ lobby:'Lobby', title:'Hangman — Duel', back:'Back to lobby',
+       setupinfo:n=>'Choose the secret word (3-8 letters) '+n+' will have to guess.',
+       tries:n=>'Attempts to guess it: '+n, setBtn:'Confirm word',
+       waitinfo:n=>'Word sent! Waiting for '+n+' to choose the word you must guess…',
+       guess:'Guess the word your opponent assigned you!', left:n=>n+' attempts left',
+       meTag:'You guess', opTag:n=>n+' guesses', enter:'Enter',
+       solvedWait:n=>'✅ Guessed! Waiting for '+n+' to finish…', failedWait:n=>'💀 Hanged! Waiting for '+n+' to finish…',
+       win:'🏆 You won the duel!', lose:'😔 You lost the duel.', draw:'🤝 Draw!',
+       async:'Online duel: each guesses the word chosen by the other. Fewest attempts wins.' }
 };
-const s = () => L[getLang()];
-$('#t-lobby').textContent=s().lobby; $('#t-title').textContent=s().title; $('#t-setupinfo').textContent=s().setup;
-$('#startBtn').textContent=s().start; $('#newBtn').textContent=s().neu; $('#t-async').textContent=s().async;
-
+const s=()=>L[getLang()];
 const PARTS=10;
-let secret, len, attempts, rows, cur, phase, keyState;
+let m0 = await store.getMatch(matchId);
+if(!m0){ toast('—'); location.href='../../lobby.html'; }
+const opp = m0.players.find(p=>p!==me.nick) || '???';
+
+$('#t-lobby').textContent=s().lobby; $('#t-title').textContent=s().title; $('#t-async').textContent=s().async;
+$('#t-back2').textContent=s().back; $('#duelInfo').textContent=me.nick+'  ⚔  '+opp;
+$('#setupinfo')&&($('#t-setupinfo').textContent=s().setupinfo(opp));
+$('#t-waitinfo').textContent=s().waitinfo(opp);
+$('#setBtn').textContent=s().setBtn;
+
+function show(id){ ['setup','wait','play','result'].forEach(x=>$('#'+x).classList.toggle('on', x===id)); }
 
 window.onSecret=()=>{ const v=$('#secretIn').value.replace(/[^a-zA-Z]/g,'').toUpperCase(); $('#secretIn').value=v;
-  const ok=v.length>=3; $('#triesInfo').textContent = ok? s().tries(v.length+1) : '—';
-  $('#startBtn').disabled=!ok; $('#startBtn').style.opacity=ok?1:.5; };
-window.start=()=>{ secret=$('#secretIn').value.toUpperCase(); len=secret.length; attempts=len+1; rows=[]; cur=''; phase='play'; keyState={};
-  $('#setup').style.display='none'; $('#play').classList.add('on'); buildGrid(); buildKb(); drawHang(0,true);
-  $('#triesLeft').textContent=s().left(attempts); $('#status').innerHTML='<span class="hl">'+s().guess+'</span>'; };
-window.reset=()=>{ phase='setup'; $('#play').classList.remove('on'); $('#setup').style.display='flex'; $('#secretIn').value=''; onSecret(); $('#status').textContent=''; };
+  const ok=v.length>=3; $('#setTries').textContent= ok? s().tries(v.length+1):'—'; $('#setBtn').disabled=!ok; $('#setBtn').style.opacity=ok?1:.5; };
+window.sendWord=async()=>{ const w=$('#secretIn').value.toUpperCase(); const cur=await store.getMatch(matchId);
+  const ns=JSON.parse(JSON.stringify(cur.state||{})); ns.secret=ns.secret||{}; ns.rows=ns.rows||{}; ns.done=ns.done||{};
+  ns.secret[opp]=enc(w); ns.rows[me.nick]=ns.rows[me.nick]||[];
+  await store.updateMatch(matchId,{state:ns}); };
 
+/* ---- gioco ---- */
+let typed='', mySecret='', myLen=0, myAttempts=0, keyState={}, lastRowsLen=-1;
 function buildGrid(){ const g=$('#grid'); g.innerHTML='';
-  for(let r=0;r<attempts;r++){ const row=document.createElement('div'); row.className='grow';
-    for(let c=0;c<len;c++){ const t=document.createElement('div'); t.className='tile'; t.dataset.r=r; t.dataset.c=c; row.appendChild(t);} g.appendChild(row);} }
+  for(let r=0;r<myAttempts;r++){ const row=document.createElement('div'); row.className='grow';
+    for(let c=0;c<myLen;c++){ const t=document.createElement('div'); t.className='tile'; t.dataset.r=r; t.dataset.c=c; row.appendChild(t);} g.appendChild(row);} }
 const KEYS=[['Q','W','E','R','T','Y','U','I','O','P'],['A','S','D','F','G','H','J','K','L'],['ENTER','Z','X','C','V','B','N','M','DEL']];
 function buildKb(){ const kb=$('#kb'); kb.innerHTML='';
   KEYS.forEach(rowk=>{ const row=document.createElement('div'); row.className='kbrow';
     rowk.forEach(k=>{ const b=document.createElement('button'); b.className='key'+(k.length>1?' wide':'')+(keyState[k]?' '+keyState[k]:'');
-      b.textContent = k==='ENTER'?s().enter : (k==='DEL'?'⌫':k); b.onclick=()=>press(k); row.appendChild(b); }); kb.appendChild(row); }); }
-function renderCur(){ const r=rows.length; for(let c=0;c<len;c++){ const t=document.querySelector(`.tile[data-r="${r}"][data-c="${c}"]`); if(!t)continue; t.textContent=cur[c]||''; t.classList.toggle('filled',!!cur[c]); } }
-function press(k){ if(phase!=='play')return; if(k==='DEL'){cur=cur.slice(0,-1);renderCur();return;} if(k==='ENTER'){ if(cur.length===len)submit(); return;} if(/^[A-Z]$/.test(k)&&cur.length<len){cur+=k;renderCur();} }
-function score(g,sec){ const res=new Array(len).fill('absent'); const cnt={}; for(const ch of sec)cnt[ch]=(cnt[ch]||0)+1;
-  for(let i=0;i<len;i++) if(g[i]===sec[i]){res[i]='correct';cnt[g[i]]--;}
-  for(let i=0;i<len;i++){ if(res[i]==='correct')continue; if(cnt[g[i]]>0){res[i]='present';cnt[g[i]]--;} } return res; }
-async function submit(){ const r=rows.length; const guess=cur; const res=score(guess,secret);
-  for(let c=0;c<len;c++){ const t=document.querySelector(`.tile[data-r="${r}"][data-c="${c}"]`);
-    setTimeout(()=>{ t.classList.add('flip'); setTimeout(()=>t.classList.add(res[c]),200); }, c*120);
-    const prev=keyState[guess[c]], cls=res[c];
-    if(cls==='correct'||(cls==='present'&&prev!=='correct')||(cls==='absent'&&!prev)) keyState[guess[c]]=cls; }
-  rows.push(guess); cur='';
-  setTimeout(async()=>{ buildKb();
-    if(guess===secret){ phase='over'; $('#status').innerHTML='<span class="hl">'+s().win+'</span>'; await store.addPoints(me.nick,3); return; }
-    drawHang(Math.ceil(rows.length/attempts*PARTS));
-    const left=attempts-rows.length; $('#triesLeft').textContent=s().left(left);
-    if(left<=0){ phase='over'; drawHang(PARTS); $('#status').textContent=s().lose(secret); }
-  }, len*120+260); }
-function drawHang(n,resetAll){ n=Math.min(PARTS,n);
-  document.querySelectorAll('.hpart').forEach(p=>{ const i=+p.dataset.h;
-    if(resetAll){ p.classList.remove('show','just'); }
-    if(i<n){ const was=p.classList.contains('show'); p.classList.add('show'); if(!was){ p.classList.add('just'); setTimeout(()=>p.classList.remove('just'),500);} }
-    else p.classList.remove('show'); }); }
-document.addEventListener('keydown',e=>{ if(phase!=='play')return; const k=e.key.toUpperCase(); if(k==='BACKSPACE')press('DEL'); else if(k==='ENTER')press('ENTER'); else if(/^[A-Z]$/.test(k))press(k); });
+      b.textContent=k==='ENTER'?s().enter:(k==='DEL'?'⌫':k); b.onclick=()=>press(k); row.appendChild(b); }); kb.appendChild(row); }); }
+function scoreGuess(g,sec){ const res=new Array(myLen).fill('absent'); const cnt={}; for(const ch of sec)cnt[ch]=(cnt[ch]||0)+1;
+  for(let i=0;i<myLen;i++) if(g[i]===sec[i]){res[i]='correct';cnt[g[i]]--;}
+  for(let i=0;i<myLen;i++){ if(res[i]==='correct')continue; if(cnt[g[i]]>0){res[i]='present';cnt[g[i]]--;} } return res; }
+function paintRows(rows){ keyState={};
+  rows.forEach((g,r)=>{ const res=scoreGuess(g,mySecret);
+    for(let c=0;c<myLen;c++){ const t=document.querySelector(`.tile[data-r="${r}"][data-c="${c}"]`); if(!t)continue; t.textContent=g[c]; t.className='tile filled '+res[c];
+      const prev=keyState[g[c]],cls=res[c]; if(cls==='correct'||(cls==='present'&&prev!=='correct')||(cls==='absent'&&!prev)) keyState[g[c]]=cls; } });
+  buildKb(); drawHang(Math.ceil(rows.filter(g=>g!==mySecret).length/myAttempts*PARTS)); }
+function renderTyped(rowIdx){ for(let c=0;c<myLen;c++){ const t=document.querySelector(`.tile[data-r="${rowIdx}"][data-c="${c}"]`); if(!t)continue; t.textContent=typed[c]||''; t.classList.toggle('filled',!!typed[c]); } }
+function drawHang(n){ n=Math.min(PARTS,n); document.querySelectorAll('.hpart').forEach(p=>{ const i=+p.dataset.h; p.classList.toggle('show', i<n); }); }
+function press(k){ const cur=window.__cur; if(!cur) return; const rows=(cur.state.rows&&cur.state.rows[me.nick])||[]; if(cur.state.done&&cur.state.done[me.nick]) return;
+  if(k==='DEL'){typed=typed.slice(0,-1);renderTyped(rows.length);return;}
+  if(k==='ENTER'){ if(typed.length===myLen) submitGuess(); return; }
+  if(/^[A-Z]$/.test(k)&&typed.length<myLen){ typed+=k; renderTyped(rows.length); } }
+async function submitGuess(){ const cur=await store.getMatch(matchId); const ns=JSON.parse(JSON.stringify(cur.state));
+  ns.rows=ns.rows||{}; ns.done=ns.done||{}; const rows=[...(ns.rows[me.nick]||[]), typed]; ns.rows[me.nick]=rows;
+  if(typed===mySecret) ns.done[me.nick]='won'; else if(rows.length>=myAttempts) ns.done[me.nick]='lost';
+  typed='';
+  await store.updateMatch(matchId,{state:ns}); }
+document.addEventListener('keydown',e=>{ if(!$('#play').classList.contains('on'))return; const k=e.key.toUpperCase(); if(k==='BACKSPACE')press('DEL'); else if(k==='ENTER')press('ENTER'); else if(/^[A-Z]$/.test(k))press(k); });
 
-reset();
+/* ---- punteggio finale (lo assegna solo players[0] una volta) ---- */
+async function maybeScore(cur){ const st=cur.state; if(st.scored) return; if(cur.players[0]!==me.nick) return;
+  const aN=cur.players[0], bN=cur.players[1]; const aD=st.done[aN], bD=st.done[bN];
+  const aR=(st.rows[aN]||[]).length, bR=(st.rows[bN]||[]).length;
+  let winner=null;
+  if(aD==='won'&&bD!=='won') winner=aN; else if(bD==='won'&&aD!=='won') winner=bN;
+  else if(aD==='won'&&bD==='won') winner = aR<bR? aN : (bR<aR? bN : null);
+  else winner=null;
+  const ns=JSON.parse(JSON.stringify(st)); ns.scored=true; ns.winner=winner;
+  await store.updateMatch(matchId,{state:ns, status:'done', winner});
+  if(winner){ await store.addPoints(winner,3); } else { await store.addPoints(aN,1); await store.addPoints(bN,1); }
+}
+
+/* ---- render principale (realtime) ---- */
+function render(m){ window.__cur=m; const st=m.state||{}; const secret=st.secret||{}, rows=st.rows||{}, done=st.done||{};
+  // 1) devo ancora scegliere la parola per l'avversario?
+  if(secret[opp]==null){ show('setup'); $('#status').innerHTML='<span class="hl">'+s().setupinfo(opp).split('.')[0]+'</span>'; return; }
+  // 2) l'avversario non ha ancora scelto la mia?
+  if(secret[me.nick]==null){ show('wait'); $('#status').textContent=''; return; }
+  // ho la mia parola: preparo il gioco
+  mySecret=dec(secret[me.nick]); myLen=mySecret.length; myAttempts=myLen+1;
+  const myRows=rows[me.nick]||[]; const myDone=done[me.nick];
+  // entrambi finiti → risultato
+  if(myDone && done[opp]){ maybeScore(m); showResult(m); return; }
+  show('play');
+  $('#vsMe').textContent=s().meTag+' ('+myLen+')'; $('#vsOp').textContent=s().opTag(opp)+(done[opp]?' ✓':'');
+  if(lastRowsLen!==myRows.length || $('#grid').children.length!==myAttempts){ buildGrid(); lastRowsLen=myRows.length; typed=''; }
+  paintRows(myRows); renderTyped(myRows.length);
+  $('#triesLeft').textContent=s().left(myAttempts-myRows.length);
+  if(myDone==='won'){ $('#status').innerHTML='<span class="hl">'+s().solvedWait(opp)+'</span>'; }
+  else if(myDone==='lost'){ $('#status').textContent=s().failedWait(opp); }
+  else $('#status').innerHTML='<span class="hl">'+s().guess+'</span>';
+}
+function showResult(m){ show('result'); const w=m.state.winner;
+  if(w===me.nick){ $('#resEmoji').textContent='🏆'; $('#resText').textContent=s().win; }
+  else if(w===opp){ $('#resEmoji').textContent='😔'; $('#resText').textContent=s().lose; }
+  else { $('#resEmoji').textContent='🤝'; $('#resText').textContent=s().draw; }
+}
+
+store.subscribeMatch(matchId, m=>{ if(m) render(m); });
 </script>
 </body>
 </html>
