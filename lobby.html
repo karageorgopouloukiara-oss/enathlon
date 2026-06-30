@@ -161,10 +161,24 @@
           </div>
         </div>
       </div>
-      <div class="poster lead-poster" style="right:0.5%;top:13%;width:14%;height:40%;transform:perspective(420px) rotateY(-16deg);">
+      <!-- classifica: a destra della macchinetta (muro di fondo) -->
+      <div class="poster lead-poster" style="left:61%;top:21%;width:13.5%;height:31%;">
         <div class="poster-frame">
           <div class="lead-title" id="leadTitle">🏆 CLASSIFICA</div>
           <div class="lead-list" id="leadList"></div>
+        </div>
+      </div>
+      <!-- finta pubblicità: muro laterale destro -->
+      <div class="poster" style="right:0.5%;top:14%;width:14%;height:38%;transform:perspective(420px) rotateY(-16deg);">
+        <div class="poster-frame" style="background:linear-gradient(160deg,#006894,#00A0A3);">
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;text-align:center;padding:4px;">
+            <div id="adDeal" style="font-size:8px;font-weight:800;letter-spacing:1px;opacity:.85;">OFFERTA PAUSA</div>
+            <div style="font-size:18px;font-weight:900;line-height:.95;margin:3px 0;color:#C7FF1F;">2×1</div>
+            <div id="adOn" style="font-size:9px;font-weight:900;line-height:1;">SUL CAFFÈ</div>
+            <div style="font-size:26px;margin:3px 0;">☕</div>
+            <div id="adNote" style="font-size:7px;font-weight:700;opacity:.9;line-height:1.15;">Solo durante<br>i buchi di lavoro!</div>
+            <div style="font-size:7px;font-weight:900;margin-top:4px;background:#C7FF1F;color:#006894;padding:2px 6px;border-radius:3px;">ENATHLON BAR</div>
+          </div>
         </div>
       </div>
     </div>
@@ -218,13 +232,15 @@ const L = {
        challengeHdr:'Sfidalo a:', challenges:'ti sfida!', accept:'Accetta', decline:'Declina', ongTitle:'☕ Partite in corso',
        you:'Tu', yourTurn:'È il tuo turno', waiting:'In attesa', resume:'Riprendi', noOng:'Nessuna partita in corso',
        brewing:'Preparazione…', ready:'pronto!', cleared:'Bersaglio svuotato', sent:(n,g)=>'📨 Sfida a '+g+' inviata a '+n,
-       accepted:g=>'✅ Sfida accettata: '+g, declined:'Sfida declinata', soon:'in arrivo!' },
+       accepted:g=>'✅ Sfida accettata: '+g, declined:'Sfida declinata', soon:'in arrivo!',
+       adDeal:'OFFERTA PAUSA', adOn:'SUL CAFFÈ', adNote:'Solo durante<br>i buchi di lavoro!' },
   en:{ city:'☀ Athens', coffee:'COFFEE', d1:'Espresso', d2:'Long Black', d3:'Americano', throw:'Throw:', dartTitle:'SHOOTING RANGE',
        settings:'Settings', language:'Language', edit:'✏️ Edit avatar', out:'Log out', lead:'🏆 LEADERBOARD',
        challengeHdr:'Challenge to:', challenges:'challenges you!', accept:'Accept', decline:'Decline', ongTitle:'☕ Ongoing games',
        you:'You', yourTurn:'Your turn', waiting:'Waiting', resume:'Resume', noOng:'No ongoing games',
        brewing:'Brewing…', ready:'ready!', cleared:'Board cleared', sent:(n,g)=>'📨 '+g+' challenge sent to '+n,
-       accepted:g=>'✅ Challenge accepted: '+g, declined:'Challenge declined', soon:'coming soon!' }
+       accepted:g=>'✅ Challenge accepted: '+g, declined:'Challenge declined', soon:'coming soon!',
+       adDeal:'BREAK DEAL', adOn:'ON COFFEE', adNote:'Only during<br>work breaks!' }
 };
 const tt = (k)=>{ const s=L[getLang()][k]; return s; };
 
@@ -237,6 +253,7 @@ function applyLang(){
   $('#g-title').textContent=s.settings; $('#g-lang').textContent=s.language;
   $('#g-edit').textContent=s.edit; $('#g-out').textContent=s.out;
   $('#leadTitle').textContent=s.lead; $('#ongTitle').textContent=s.ongTitle;
+  $('#adDeal').innerHTML=s.adDeal; $('#adOn').innerHTML=s.adOn; $('#adNote').innerHTML=s.adNote;
   buildGearLang(); renderLeader(); renderAvatars();
   document.documentElement.lang=getLang();
 }
@@ -265,19 +282,13 @@ async function renderLeader(){
 }
 
 /* ---- colleghi (avatar nella sala) ---- */
-const SAMPLE = [
-  { nick:'Sofia', animal:'bear', shirt:'#1FC5A8', pants:'#009B8A' },
-  { nick:'Nikos', animal:'owl',  shirt:'#00A0A3', pants:'#007A7D' },
-  { nick:'Lena',  animal:'cat',  shirt:'#9b59b6', pants:'#6f3a86' },
-];
 const SLOTS = [ {left:'14%',bottom:'21%'}, {left:'5%',bottom:'10%'}, {right:'14%',bottom:'21%'} ];
 let colleagues = [];
 
 async function loadColleagues(){
-  const players = (await store.listPlayers()).filter(p=>p.nick!==me.nick);
-  colleagues = [...players];
-  for(const s of SAMPLE){ if(colleagues.length>=3) break; if(!colleagues.find(c=>c.nick===s.nick)) colleagues.push(s); }
-  colleagues = colleagues.slice(0,3);
+  /* solo utenti reali registrati (escluso me) */
+  const players = (await store.listPlayers()).filter(p => p.nick !== me.nick);
+  colleagues = players.slice(0, 3);
 }
 function renderAvatars(){
   const layer=$('#avatarLayer'); layer.innerHTML='';

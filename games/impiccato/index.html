@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Enathlon — Impiccato</title>
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  .wrap { width:100%; max-width:560px; }
+  .topbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+  .gtitle { text-align:center; font-weight:900; font-size:20px; margin-bottom:4px; }
+  .status { text-align:center; font-weight:800; font-size:14px; min-height:20px; margin-bottom:14px; color:#cfe0ec; }
+  .status .hl { color:var(--lime); }
+  .setup { display:flex; flex-direction:column; align-items:center; gap:14px; padding:8px; }
+  .setup p { color:var(--text-mut); font-size:13px; text-align:center; max-width:380px; line-height:1.5; }
+  .secret { width:280px; text-align:center; letter-spacing:4px; text-transform:uppercase; }
+  .tries { font-size:12px; font-weight:800; color:var(--text-mut); }
+  .play { display:none; } .play.on { display:block; }
+  .gamerow { display:flex; gap:18px; justify-content:center; align-items:flex-start; flex-wrap:wrap; }
+  .hpart { opacity:0; transition:opacity .4s; transform-box:fill-box; transform-origin:center; }
+  .hpart.show { opacity:1; } .hpart.just { animation:pop .5s ease; }
+  @keyframes pop { 0%{opacity:0;transform:scale(.4);} 60%{transform:scale(1.15);} 100%{opacity:1;transform:scale(1);} }
+  .triesLeft { text-align:center; font-size:12px; font-weight:800; color:var(--text-mut); margin-top:4px; }
+  .grid { display:flex; flex-direction:column; gap:5px; align-items:center; }
+  .grow { display:flex; gap:5px; }
+  .tile { width:38px; height:38px; border:2px solid #2a4456; border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:900; color:#fff; text-transform:uppercase; transition:all .3s; }
+  .tile.filled { border-color:#5a7a96; }
+  .tile.correct { background:var(--keppel); border-color:var(--keppel); color:#06322a; }
+  .tile.present { background:#f1c40f; border-color:#f1c40f; color:#5a4a06; }
+  .tile.absent { background:#2a3a44; border-color:#2a3a44; color:#7f97a8; }
+  .tile.flip { animation:flip .4s ease; } @keyframes flip { 0%{transform:rotateX(0);} 50%{transform:rotateX(90deg);} 100%{transform:rotateX(0);} }
+  .kb { display:flex; flex-direction:column; gap:6px; align-items:center; margin-top:18px; }
+  .kbrow { display:flex; gap:5px; }
+  .key { min-width:28px; height:42px; padding:0 8px; border:none; border-radius:7px; background:#3a566b; color:#fff; font-family:inherit; font-size:13px; font-weight:800; cursor:pointer; }
+  .key.wide { font-size:11px; } .key.correct { background:var(--keppel); color:#06322a; } .key.present { background:#f1c40f; color:#5a4a06; } .key.absent { background:#1c2a33; color:#5f7585; }
+  .footer { display:flex; justify-content:center; gap:8px; margin-top:14px; }
+  .async-note { text-align:center; font-size:11px; color:#6f93ad; margin-top:12px; font-weight:600; }
+</style>
+</head>
+<body>
+<div class="page center-screen">
+  <div class="panel wrap">
+    <div class="topbar">
+      <div class="logo"><div class="logo-text" style="font-size:24px"><span class="ena">EN</span><span class="thl">Athl</span><span class="on">ON</span></div></div>
+      <button class="btn btn-ghost" onclick="location.href='../../lobby.html'">‹ <span id="t-lobby"></span></button>
+    </div>
+    <div class="gtitle" id="t-title"></div>
+    <div class="status" id="status"></div>
+
+    <div class="setup" id="setup">
+      <p id="t-setupinfo"></p>
+      <input class="inp secret" id="secretIn" maxlength="8" placeholder="PAROLA" oninput="onSecret()">
+      <div class="tries" id="triesInfo"></div>
+      <button class="btn btn-primary" id="startBtn" disabled style="opacity:.5" onclick="start()"></button>
+    </div>
+
+    <div class="play" id="play">
+      <div class="gamerow">
+        <div>
+          <svg width="130" height="150" viewBox="0 0 120 150">
+            <line class="hpart" data-h="0" x1="8" y1="143" x2="72" y2="143" stroke="#8a6d3b" stroke-width="5" stroke-linecap="round"/>
+            <line class="hpart" data-h="1" x1="28" y1="143" x2="28" y2="10" stroke="#8a6d3b" stroke-width="5" stroke-linecap="round"/>
+            <line class="hpart" data-h="2" x1="28" y1="10" x2="86" y2="10" stroke="#8a6d3b" stroke-width="5" stroke-linecap="round"/>
+            <line class="hpart" data-h="3" x1="86" y1="10" x2="86" y2="24" stroke="#b08d57" stroke-width="3" stroke-linecap="round"/>
+            <circle class="hpart" data-h="4" cx="86" cy="35" r="11" fill="none" stroke="#cfe0ec" stroke-width="3"/>
+            <line class="hpart" data-h="5" x1="86" y1="46" x2="86" y2="82" stroke="#cfe0ec" stroke-width="3" stroke-linecap="round"/>
+            <line class="hpart" data-h="6" x1="86" y1="56" x2="70" y2="70" stroke="#cfe0ec" stroke-width="3" stroke-linecap="round"/>
+            <line class="hpart" data-h="7" x1="86" y1="56" x2="102" y2="70" stroke="#cfe0ec" stroke-width="3" stroke-linecap="round"/>
+            <line class="hpart" data-h="8" x1="86" y1="82" x2="72" y2="104" stroke="#cfe0ec" stroke-width="3" stroke-linecap="round"/>
+            <line class="hpart" data-h="9" x1="86" y1="82" x2="100" y2="104" stroke="#cfe0ec" stroke-width="3" stroke-linecap="round"/>
+          </svg>
+          <div class="triesLeft" id="triesLeft"></div>
+        </div>
+        <div class="grid" id="grid"></div>
+      </div>
+      <div class="kb" id="kb"></div>
+      <div class="footer"><button class="btn btn-ghost" id="newBtn" onclick="reset()"></button></div>
+    </div>
+    <div class="async-note" id="t-async"></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { getLang } from '../../shared/i18n.js';
+import * as auth from '../../shared/auth.js';
+import * as store from '../../shared/store.js';
+
+const $=(s)=>document.querySelector(s);
+function toast(m){const e=$('#toast');e.textContent=m;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),1800);}
+
+if(!store.isAccessGranted()) location.href='../../index.html';
+const me = await auth.current();
+if(!me) location.href='../../index.html';
+
+const L = {
+  it:{ lobby:'Lobby', title:"L'Impiccato", setup:'Imposta la parola segreta (3-8 lettere), poi passa il dispositivo a chi deve indovinare.',
+       tries:n=>'Tentativi: '+n, start:'Nascondi e gioca', neu:'Nuova partita', guess:'Indovina la parola!',
+       left:n=>n+' tentativi rimasti', win:'🏆 Indovinato!', lose:w=>'💀 Impiccato! La parola era "'+w+'"', enter:'Invio',
+       async:'💤 A turni: uno imposta la parola, l’altro indovina (verde = lettera giusta al posto giusto, giallo = presente).' },
+  en:{ lobby:'Lobby', title:'Hangman', setup:'Set the secret word (3-8 letters), then pass the device to whoever guesses.',
+       tries:n=>'Attempts: '+n, start:'Hide and play', neu:'New game', guess:'Guess the word!',
+       left:n=>n+' attempts left', win:'🏆 You guessed it!', lose:w=>'💀 Hanged! The word was "'+w+'"', enter:'Enter',
+       async:'💤 Turn-based: one sets the word, the other guesses (green = right letter+spot, yellow = present).' }
+};
+const s = () => L[getLang()];
+$('#t-lobby').textContent=s().lobby; $('#t-title').textContent=s().title; $('#t-setupinfo').textContent=s().setup;
+$('#startBtn').textContent=s().start; $('#newBtn').textContent=s().neu; $('#t-async').textContent=s().async;
+
+const PARTS=10;
+let secret, len, attempts, rows, cur, phase, keyState;
+
+window.onSecret=()=>{ const v=$('#secretIn').value.replace(/[^a-zA-Z]/g,'').toUpperCase(); $('#secretIn').value=v;
+  const ok=v.length>=3; $('#triesInfo').textContent = ok? s().tries(v.length+1) : '—';
+  $('#startBtn').disabled=!ok; $('#startBtn').style.opacity=ok?1:.5; };
+window.start=()=>{ secret=$('#secretIn').value.toUpperCase(); len=secret.length; attempts=len+1; rows=[]; cur=''; phase='play'; keyState={};
+  $('#setup').style.display='none'; $('#play').classList.add('on'); buildGrid(); buildKb(); drawHang(0,true);
+  $('#triesLeft').textContent=s().left(attempts); $('#status').innerHTML='<span class="hl">'+s().guess+'</span>'; };
+window.reset=()=>{ phase='setup'; $('#play').classList.remove('on'); $('#setup').style.display='flex'; $('#secretIn').value=''; onSecret(); $('#status').textContent=''; };
+
+function buildGrid(){ const g=$('#grid'); g.innerHTML='';
+  for(let r=0;r<attempts;r++){ const row=document.createElement('div'); row.className='grow';
+    for(let c=0;c<len;c++){ const t=document.createElement('div'); t.className='tile'; t.dataset.r=r; t.dataset.c=c; row.appendChild(t);} g.appendChild(row);} }
+const KEYS=[['Q','W','E','R','T','Y','U','I','O','P'],['A','S','D','F','G','H','J','K','L'],['ENTER','Z','X','C','V','B','N','M','DEL']];
+function buildKb(){ const kb=$('#kb'); kb.innerHTML='';
+  KEYS.forEach(rowk=>{ const row=document.createElement('div'); row.className='kbrow';
+    rowk.forEach(k=>{ const b=document.createElement('button'); b.className='key'+(k.length>1?' wide':'')+(keyState[k]?' '+keyState[k]:'');
+      b.textContent = k==='ENTER'?s().enter : (k==='DEL'?'⌫':k); b.onclick=()=>press(k); row.appendChild(b); }); kb.appendChild(row); }); }
+function renderCur(){ const r=rows.length; for(let c=0;c<len;c++){ const t=document.querySelector(`.tile[data-r="${r}"][data-c="${c}"]`); if(!t)continue; t.textContent=cur[c]||''; t.classList.toggle('filled',!!cur[c]); } }
+function press(k){ if(phase!=='play')return; if(k==='DEL'){cur=cur.slice(0,-1);renderCur();return;} if(k==='ENTER'){ if(cur.length===len)submit(); return;} if(/^[A-Z]$/.test(k)&&cur.length<len){cur+=k;renderCur();} }
+function score(g,sec){ const res=new Array(len).fill('absent'); const cnt={}; for(const ch of sec)cnt[ch]=(cnt[ch]||0)+1;
+  for(let i=0;i<len;i++) if(g[i]===sec[i]){res[i]='correct';cnt[g[i]]--;}
+  for(let i=0;i<len;i++){ if(res[i]==='correct')continue; if(cnt[g[i]]>0){res[i]='present';cnt[g[i]]--;} } return res; }
+async function submit(){ const r=rows.length; const guess=cur; const res=score(guess,secret);
+  for(let c=0;c<len;c++){ const t=document.querySelector(`.tile[data-r="${r}"][data-c="${c}"]`);
+    setTimeout(()=>{ t.classList.add('flip'); setTimeout(()=>t.classList.add(res[c]),200); }, c*120);
+    const prev=keyState[guess[c]], cls=res[c];
+    if(cls==='correct'||(cls==='present'&&prev!=='correct')||(cls==='absent'&&!prev)) keyState[guess[c]]=cls; }
+  rows.push(guess); cur='';
+  setTimeout(async()=>{ buildKb();
+    if(guess===secret){ phase='over'; $('#status').innerHTML='<span class="hl">'+s().win+'</span>'; await store.addPoints(me.nick,3); return; }
+    drawHang(Math.ceil(rows.length/attempts*PARTS));
+    const left=attempts-rows.length; $('#triesLeft').textContent=s().left(left);
+    if(left<=0){ phase='over'; drawHang(PARTS); $('#status').textContent=s().lose(secret); }
+  }, len*120+260); }
+function drawHang(n,resetAll){ n=Math.min(PARTS,n);
+  document.querySelectorAll('.hpart').forEach(p=>{ const i=+p.dataset.h;
+    if(resetAll){ p.classList.remove('show','just'); }
+    if(i<n){ const was=p.classList.contains('show'); p.classList.add('show'); if(!was){ p.classList.add('just'); setTimeout(()=>p.classList.remove('just'),500);} }
+    else p.classList.remove('show'); }); }
+document.addEventListener('keydown',e=>{ if(phase!=='play')return; const k=e.key.toUpperCase(); if(k==='BACKSPACE')press('DEL'); else if(k==='ENTER')press('ENTER'); else if(/^[A-Z]$/.test(k))press(k); });
+
+reset();
+</script>
+</body>
+</html>
