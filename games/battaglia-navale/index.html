@@ -40,16 +40,8 @@
     <div class="status" id="status"></div>
 
     <div class="grids">
-      <div class="gcol">
-        <div class="glabel" id="t-enemy"></div>
-        <div class="grid enemy locked" id="enemyGrid"></div>
-        <div class="fleet" id="enemyFleet"></div>
-      </div>
-      <div class="gcol">
-        <div class="glabel" id="t-yours"></div>
-        <div class="grid yourgrid" id="yourGrid"></div>
-        <div class="fleet" id="yourFleet"></div>
-      </div>
+      <div class="gcol"><div class="glabel" id="t-enemy"></div><div class="grid enemy locked" id="enemyGrid"></div><div class="fleet" id="enemyFleet"></div></div>
+      <div class="gcol"><div class="glabel" id="t-yours"></div><div class="grid yourgrid" id="yourGrid"></div><div class="fleet" id="yourFleet"></div></div>
     </div>
 
     <div class="controls" id="placeCtrls">
@@ -59,7 +51,7 @@
       <button class="btn btn-primary" id="startBtn" disabled onclick="startBattle()"></button>
     </div>
     <div class="controls" id="battleCtrls" style="display:none">
-      <button class="btn btn-primary" onclick="reset()" id="t-new"></button>
+      <button class="btn btn-primary" onclick="goLobbyOrReset()" id="t-new"></button>
     </div>
     <div class="async-note" id="t-async"></div>
   </div>
@@ -72,74 +64,140 @@ import * as auth from '../../shared/auth.js';
 import * as store from '../../shared/store.js';
 const $=(s)=>document.querySelector(s);
 function toast(m){const e=$('#toast');e.textContent=m;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),1800);}
+const clone=(o)=>JSON.parse(JSON.stringify(o));
 if(!store.isAccessGranted()) location.href='../../index.html';
 const me = await auth.current(); if(!me) location.href='../../index.html';
+const matchId = new URLSearchParams(location.search).get('match');
+const ONLINE = !!matchId;
 
 const SHIPS=[{k:'carrier',n:5},{k:'battleship',n:4},{k:'cruiser',n:3},{k:'submarine',n:3},{k:'destroyer',n:2}];
 const L={
-  it:{lobby:'Lobby',title:'Battaglia Navale',enemy:'🎯 Flotta nemica (PC)',yours:'⚓ La tua flotta',orient:'Ruota',auto:'Auto',undo:'Annulla',start:'Inizia battaglia',neu:'Nuova partita',
-      placing:n=>'Posiziona: '+n,allPlaced:'Flotta schierata! Inizia la battaglia',yourTurn:'Spara sulla griglia nemica!',oppTurn:'Il PC sta sparando…',
-      hit:'💥 Colpito! Passa il turno',miss:'🌊 Acqua! Passa il turno',sunkYou:'🔥 Nave nemica in fiamme!',sunkOpp:'🔥 Il PC ha affondato una tua nave!',
-      youWin:'🏆 Hai vinto! Flotta nemica distrutta',oppWin:'Il PC ha vinto…',cant:'Qui non ci sta, prova altrove',
-      ships:{carrier:'Portaerei',battleship:'Corazzata',cruiser:'Incrociatore',submarine:'Sommergibile',destroyer:'Cacciatorpediniere'},
-      async:'Posiziona le navi (ruota con 🔄), poi affonda la flotta del PC. Un colpo a turno.'},
-  en:{lobby:'Lobby',title:'Battleship',enemy:'🎯 Enemy fleet (PC)',yours:'⚓ Your fleet',orient:'Rotate',auto:'Auto',undo:'Undo',start:'Start battle',neu:'New game',
-      placing:n=>'Place: '+n,allPlaced:'Fleet deployed! Start the battle',yourTurn:'Fire at the enemy grid!',oppTurn:'PC is firing…',
-      hit:'💥 Hit! Turn passes',miss:'🌊 Miss! Turn passes',sunkYou:'🔥 Enemy ship in flames!',sunkOpp:'🔥 PC sank one of your ships!',
-      youWin:'🏆 You won! Enemy fleet destroyed',oppWin:'PC won…',cant:'Does not fit here, try elsewhere',
-      ships:{carrier:'Carrier',battleship:'Battleship',cruiser:'Cruiser',submarine:'Submarine',destroyer:'Destroyer'},
-      async:'Place your ships (rotate with 🔄), then sink the PC fleet. One shot per turn.'}
+  it:{lobby:'Lobby',title:'Battaglia Navale',enemyPC:'🎯 Flotta nemica (PC)',yours:'⚓ La tua flotta',orient:'Ruota',auto:'Auto',undo:'Annulla',start:'Inizia battaglia',ready:'Pronto!',neu:'Nuova partita',backLobby:'Torna alla lobby',
+    placing:n=>'Posiziona: '+n,allPlaced:'Flotta schierata!',waitOpp:n=>'In attesa che '+n+' schieri la flotta…',yourTurn:'Spara sulla griglia nemica!',oppTurn:n=>'Turno di '+n+'…',
+    hit:'💥 Colpito! Passa il turno',miss:'🌊 Acqua! Passa il turno',sunkYou:'🔥 Nave nemica in fiamme!',sunkOpp:n=>'🔥 '+n+' ha affondato una tua nave!',
+    youWin:'🏆 Hai vinto! Flotta nemica distrutta',oppWin:'Hai perso…',cant:'Qui non ci sta, prova altrove',
+    ships:{carrier:'Portaerei',battleship:'Corazzata',cruiser:'Incrociatore',submarine:'Sommergibile',destroyer:'Cacciatorpediniere'},
+    asyncPC:'Posiziona le navi (ruota con 🔄), poi affonda la flotta del PC. Un colpo a turno.',
+    asyncON:'Duello online: schiera la flotta, poi a turni colpite le griglie. Anche in differita.'},
+  en:{lobby:'Lobby',title:'Battleship',enemyPC:'🎯 Enemy fleet (PC)',yours:'⚓ Your fleet',orient:'Rotate',auto:'Auto',undo:'Undo',start:'Start battle',ready:'Ready!',neu:'New game',backLobby:'Back to lobby',
+    placing:n=>'Place: '+n,allPlaced:'Fleet deployed!',waitOpp:n=>'Waiting for '+n+' to deploy…',yourTurn:'Fire at the enemy grid!',oppTurn:n=>n+"'s turn…",
+    hit:'💥 Hit! Turn passes',miss:'🌊 Miss! Turn passes',sunkYou:'🔥 Enemy ship in flames!',sunkOpp:n=>'🔥 '+n+' sank one of your ships!',
+    youWin:'🏆 You won! Enemy fleet destroyed',oppWin:'You lost…',cant:'Does not fit here, try elsewhere',
+    ships:{carrier:'Carrier',battleship:'Battleship',cruiser:'Cruiser',submarine:'Submarine',destroyer:'Destroyer'},
+    asyncPC:'Place your ships (rotate with 🔄), then sink the PC fleet. One shot per turn.',
+    asyncON:'Online duel: deploy your fleet, then take turns firing. Works async too.'}
 };
 const s=()=>L[getLang()];
-function applyT(){ const x=s();
-  $('#t-lobby').textContent=x.lobby; $('#t-title').textContent=x.title; $('#t-enemy').textContent=x.enemy; $('#t-yours').textContent=x.yours;
-  $('#t-orient').textContent=x.orient; $('#t-auto').textContent=x.auto; $('#t-undo').textContent=x.undo; $('#startBtn').textContent=x.start;
-  $('#t-new').textContent=x.neu; $('#t-async').textContent=x.async; }
-
-let yourG,enemyG,yourShips,enemyShips,yourShots,enemyShots,phase,placeIdx,orient,oppQueue;
 const empty=()=>new Array(100).fill(null);
 const rc=i=>[Math.floor(i/10),i%10];
 function cellsFor(a,n,h){ const r=Math.floor(a/10),c=a%10,out=[]; for(let k=0;k<n;k++){ const rr=h?r:r+k,cc=h?c+k:c; if(rr>9||cc>9)return null; out.push(rr*10+cc);} return out; }
 function canPlace(g,cells){ return cells && cells.every(i=>g[i]===null); }
 function placeRandom(g,ships){ ships.length=0; for(let i=0;i<100;i++)g[i]=null;
   SHIPS.forEach((sh,id)=>{ let ok=false,t=0; while(!ok&&t++<999){ const h=Math.random()<.5,a=Math.floor(Math.random()*100),cells=cellsFor(a,sh.n,h); if(canPlace(g,cells)){ cells.forEach(i=>g[i]=id); ships.push({id,k:sh.k,n:sh.n,cells}); ok=true; } } }); }
-
-function build(){ const eg=$('#enemyGrid'),yg=$('#yourGrid'); eg.innerHTML='';yg.innerHTML='';
-  for(let i=0;i<100;i++){ const e=document.createElement('div');e.className='c';e.dataset.i=i;e.onclick=()=>fire(i);eg.appendChild(e);
-    const y=document.createElement('div');y.className='c';y.dataset.i=i;y.onclick=()=>placeAt(i);y.onmouseenter=()=>prev(i);y.onmouseleave=clearPrev;yg.appendChild(y); }
-  render(); }
-const shipAt=(ships,i)=>ships.find(s=>s.cells.includes(i));
 const isSunk=(sh,shots)=>sh.cells.every(i=>shots[i]==='hit'||shots[i]==='sunk');
-const fleetSunk=(ships,shots)=>ships.every(sh=>isSunk(sh,shots));
-function render(){ for(let i=0;i<100;i++){
-    const yc=document.querySelector(`#yourGrid .c[data-i="${i}"]`); yc.className='c'+(phase==='place'?' place':'')+(yourG[i]!==null?' ship':'');
-    if(enemyShots[i]==='sunk'){yc.className='c sunk';yc.textContent='🔥';} else if(enemyShots[i]==='hit'){yc.className='c hit';yc.textContent='✕';} else if(enemyShots[i]==='miss'){yc.className='c miss';yc.textContent='•';} else yc.textContent='';
-    const ec=document.querySelector(`#enemyGrid .c[data-i="${i}"]`);
-    if(yourShots[i]==='sunk'){ec.className='c sunk';ec.textContent='🔥';} else if(yourShots[i]==='hit'){ec.className='c hit';ec.textContent='✕';} else if(yourShots[i]==='miss'){ec.className='c miss';ec.textContent='•';} else {ec.className='c';ec.textContent='';}
-  } renderFleets(); }
-function renderFleets(){ const x=s();
-  const ef=$('#enemyFleet'); ef.innerHTML=''; SHIPS.forEach((sh,id)=>{ const ship=enemyShips.find(z=>z.id===id),sunk=ship&&phase!=='place'&&isSunk(ship,yourShots); const t=document.createElement('span');t.className='stag'+(sunk?' sunk':'');t.textContent=x.ships[sh.k]+' ('+sh.n+')';ef.appendChild(t); });
-  const yf=$('#yourFleet'); yf.innerHTML=''; SHIPS.forEach((sh,id)=>{ const ship=yourShips.find(z=>z.id===id),sunk=ship&&phase!=='place'&&isSunk(ship,enemyShots); let cls='stag'; if(sunk)cls+=' sunk'; else if(phase==='place'&&id===placeIdx)cls+=' next'; else if(id<placeIdx)cls+=' done'; const t=document.createElement('span');t.className=cls;t.textContent=x.ships[sh.k]+' ('+sh.n+')';yf.appendChild(t); }); }
-function prev(a){ if(phase!=='place'||placeIdx>=SHIPS.length)return; clearPrev(); const cells=cellsFor(a,SHIPS[placeIdx].n,orient==='h'),ok=canPlace(yourG,cells); (cells||[]).forEach(i=>{const el=document.querySelector(`#yourGrid .c[data-i="${i}"]`);if(el)el.classList.add(ok?'prevok':'prevbad');}); }
+
+/* ---------- placement (condivisa) ---------- */
+let yourG,yourShips,placeIdx,orient;
+function buildGrids(onFire){ const eg=$('#enemyGrid'),yg=$('#yourGrid'); eg.innerHTML='';yg.innerHTML='';
+  for(let i=0;i<100;i++){ const e=document.createElement('div');e.className='c';e.dataset.i=i;e.onclick=()=>onFire(i);eg.appendChild(e);
+    const y=document.createElement('div');y.className='c';y.dataset.i=i;y.onclick=()=>placeAt(i);y.onmouseenter=()=>prev(i);y.onmouseleave=clearPrev;yg.appendChild(y); } }
+function prev(a){ if(placeIdx>=SHIPS.length||$('#placeCtrls').style.display==='none')return; clearPrev(); const cells=cellsFor(a,SHIPS[placeIdx].n,orient==='h'),ok=canPlace(yourG,cells); (cells||[]).forEach(i=>{const el=document.querySelector(`#yourGrid .c[data-i="${i}"]`);if(el)el.classList.add(ok?'prevok':'prevbad');}); }
 function clearPrev(){ document.querySelectorAll('#yourGrid .c').forEach(c=>c.classList.remove('prevok','prevbad')); }
-window.placeAt=(a)=>{ if(phase!=='place'||placeIdx>=SHIPS.length)return; const sh=SHIPS[placeIdx],cells=cellsFor(a,sh.n,orient==='h'); if(!canPlace(yourG,cells)){toast(s().cant);return;} cells.forEach(i=>yourG[i]=placeIdx); yourShips.push({id:placeIdx,k:sh.k,n:sh.n,cells}); placeIdx++; clearPrev(); render(); if(placeIdx>=SHIPS.length)$('#startBtn').disabled=false; refresh(); };
-window.undoPlace=()=>{ if(phase!=='place'||placeIdx===0)return; placeIdx--; const sh=yourShips.pop(); sh.cells.forEach(i=>yourG[i]=null); $('#startBtn').disabled=true; render(); refresh(); };
-window.autoPlace=()=>{ if(phase!=='place')return; placeRandom(yourG,yourShips); placeIdx=SHIPS.length; $('#startBtn').disabled=false; render(); refresh(); };
+window.placeAt=(a)=>{ if($('#placeCtrls').style.display==='none'||placeIdx>=SHIPS.length)return; const sh=SHIPS[placeIdx],cells=cellsFor(a,sh.n,orient==='h'); if(!canPlace(yourG,cells)){toast(s().cant);return;} cells.forEach(i=>yourG[i]=placeIdx); yourShips.push({id:placeIdx,k:sh.k,n:sh.n,cells}); placeIdx++; clearPrev(); renderPlacement(); if(placeIdx>=SHIPS.length)$('#startBtn').disabled=false; };
+window.undoPlace=()=>{ if(placeIdx===0)return; placeIdx--; const sh=yourShips.pop(); sh.cells.forEach(i=>yourG[i]=null); $('#startBtn').disabled=true; renderPlacement(); };
+window.autoPlace=()=>{ placeRandom(yourG,yourShips); placeIdx=SHIPS.length; $('#startBtn').disabled=false; renderPlacement(); };
 window.toggleOrient=()=>{ orient=orient==='h'?'v':'h'; $('#orientLabel').textContent=orient==='h'?'↔':'↕'; };
-function refresh(){ if(phase==='place'){ if(placeIdx<SHIPS.length)$('#status').textContent=s().placing(s().ships[SHIPS[placeIdx].k]+' ('+SHIPS[placeIdx].n+')'); else $('#status').innerHTML='<span class="hl">'+s().allPlaced+'</span>'; } }
-window.startBattle=()=>{ if(placeIdx<SHIPS.length)return; phase='you'; $('#placeCtrls').style.display='none'; $('#battleCtrls').style.display='flex'; $('#enemyGrid').classList.remove('locked'); clearPrev(); render(); $('#status').innerHTML='<span class="hl">'+s().yourTurn+'</span>'; };
-function fire(i){ if(phase!=='you'||yourShots[i])return; const x=s();
-  if(enemyG[i]!==null){ yourShots[i]='hit'; const sh=shipAt(enemyShips,i); if(isSunk(sh,yourShots)){sh.cells.forEach(c=>yourShots[c]='sunk');$('#status').innerHTML='<span class="hl">'+x.sunkYou+'</span>';} else $('#status').innerHTML='<span class="hl">'+x.hit+'</span>'; render(); if(fleetSunk(enemyShips,yourShots)){ phase='over'; $('#status').innerHTML='<span class="hl">'+x.youWin+'</span>'; store.addPoints(me.nick,5); return; } }
-  else { yourShots[i]='miss'; $('#status').textContent=x.miss; render(); }
-  phase='opp'; setTimeout(()=>{ if(phase==='opp'){ $('#status').textContent=x.oppTurn; setTimeout(oppFire,700); } },1100); }
-function oppFire(){ if(phase==='over')return; const x=s(); let t=null;
-  while(oppQueue.length){ const c=oppQueue.shift(); if(!enemyShots[c]){t=c;break;} }
-  if(t===null){ const free=[]; for(let i=0;i<100;i++)if(!enemyShots[i])free.push(i); t=free[Math.floor(Math.random()*free.length)]; }
-  if(yourG[t]!==null){ enemyShots[t]='hit'; const [r,c]=rc(t); [[r-1,c],[r+1,c],[r,c-1],[r,c+1]].forEach(([rr,cc])=>{ if(rr>=0&&rr<10&&cc>=0&&cc<10){const idx=rr*10+cc; if(!enemyShots[idx])oppQueue.push(idx);} }); const sh=shipAt(yourShips,t); if(isSunk(sh,enemyShots)){sh.cells.forEach(c2=>enemyShots[c2]='sunk');$('#status').textContent=x.sunkOpp;} render(); if(fleetSunk(yourShips,enemyShots)){ phase='over'; $('#status').textContent=x.oppWin; return; } }
-  else { enemyShots[t]='miss'; render(); }
-  phase='you'; setTimeout(()=>{ if(phase==='you')$('#status').innerHTML='<span class="hl">'+x.yourTurn+'</span>'; },600); }
-window.reset=()=>{ yourG=empty();enemyG=empty();yourShips=[];enemyShips=[];yourShots=empty();enemyShots=empty();phase='place';placeIdx=0;orient='h';oppQueue=[]; placeRandom(enemyG,enemyShips); $('#orientLabel').textContent='↔'; $('#placeCtrls').style.display='flex'; $('#battleCtrls').style.display='none'; $('#enemyGrid').classList.add('locked'); $('#startBtn').disabled=true; build(); refresh(); };
-applyT(); reset();
+function renderPlacement(){ const x=s();
+  for(let i=0;i<100;i++){ const yc=document.querySelector(`#yourGrid .c[data-i="${i}"]`); yc.className='c place'+(yourG[i]!==null?' ship':''); }
+  const yf=$('#yourFleet'); yf.innerHTML=''; SHIPS.forEach((sh,id)=>{ let cls='stag'; if(id===placeIdx)cls+=' next'; else if(id<placeIdx)cls+=' done'; const t=document.createElement('span');t.className=cls;t.textContent=x.ships[sh.k]+' ('+sh.n+')';yf.appendChild(t); });
+  if(placeIdx<SHIPS.length) $('#status').textContent=x.placing(x.ships[SHIPS[placeIdx].k]+' ('+SHIPS[placeIdx].n+')'); else $('#status').innerHTML='<span class="hl">'+x.allPlaced+'</span>'; }
+
+/* =========================== VS PC =========================== */
+function runAI(){
+  $('#t-enemy').textContent=s().enemyPC; $('#t-async').textContent=s().asyncPC; $('#startBtn').textContent=s().start; $('#t-new').textContent=s().neu;
+  let enemyG,enemyShips,yourShots,enemyShots,phase,oppQueue;
+  const shipAt=(ships,i)=>ships.find(z=>z.cells.includes(i));
+  const fleetSunk=(ships,shots)=>ships.every(sh=>isSunk(sh,shots));
+  function render(){ for(let i=0;i<100;i++){
+      const yc=document.querySelector(`#yourGrid .c[data-i="${i}"]`); yc.className='c'+(phase==='place'?' place':'')+(yourG[i]!==null?' ship':'');
+      if(enemyShots[i]==='sunk'){yc.className='c sunk';yc.textContent='🔥';}else if(enemyShots[i]==='hit'){yc.className='c hit';yc.textContent='✕';}else if(enemyShots[i]==='miss'){yc.className='c miss';yc.textContent='•';}else yc.textContent='';
+      const ec=document.querySelector(`#enemyGrid .c[data-i="${i}"]`);
+      if(yourShots[i]==='sunk'){ec.className='c sunk';ec.textContent='🔥';}else if(yourShots[i]==='hit'){ec.className='c hit';ec.textContent='✕';}else if(yourShots[i]==='miss'){ec.className='c miss';ec.textContent='•';}else{ec.className='c';ec.textContent='';}
+    } fleets(); }
+  function fleets(){ const x=s(); const ef=$('#enemyFleet'); ef.innerHTML=''; SHIPS.forEach((sh,id)=>{ const ship=enemyShips.find(z=>z.id===id),sunk=ship&&phase!=='place'&&isSunk(ship,yourShots); const t=document.createElement('span');t.className='stag'+(sunk?' sunk':'');t.textContent=x.ships[sh.k]+' ('+sh.n+')';ef.appendChild(t);});
+    const yf=$('#yourFleet'); yf.innerHTML=''; SHIPS.forEach((sh,id)=>{ const ship=yourShips.find(z=>z.id===id),sunk=ship&&phase!=='place'&&isSunk(ship,enemyShots); let cls='stag'; if(sunk)cls+=' sunk'; else if(phase==='place'&&id===placeIdx)cls+=' next'; else if(id<placeIdx)cls+=' done'; const t=document.createElement('span');t.className=cls;t.textContent=x.ships[sh.k]+' ('+sh.n+')';yf.appendChild(t);}); }
+  window.startBattle=()=>{ if(placeIdx<SHIPS.length)return; phase='you'; $('#placeCtrls').style.display='none'; $('#battleCtrls').style.display='flex'; $('#enemyGrid').classList.remove('locked'); clearPrev(); render(); $('#status').innerHTML='<span class="hl">'+s().yourTurn+'</span>'; };
+  window.goLobbyOrReset=()=>reset();
+  function fire(i){ if(phase!=='you'||yourShots[i])return; const x=s();
+    if(enemyG[i]!==null){ yourShots[i]='hit'; const sh=shipAt(enemyShips,i); if(isSunk(sh,yourShots)){sh.cells.forEach(c=>yourShots[c]='sunk');$('#status').innerHTML='<span class="hl">'+x.sunkYou+'</span>';} else $('#status').innerHTML='<span class="hl">'+x.hit+'</span>'; render(); if(fleetSunk(enemyShips,yourShots)){phase='over';$('#status').innerHTML='<span class="hl">'+x.youWin+'</span>';store.addPoints(me.nick,5);return;} }
+    else { yourShots[i]='miss'; $('#status').textContent=x.miss; render(); }
+    phase='opp'; setTimeout(()=>{ if(phase==='opp'){$('#status').textContent=x.oppTurn('PC');setTimeout(oppFire,700);} },1000); }
+  function oppFire(){ if(phase==='over')return; const x=s(); let t=null;
+    while(oppQueue.length){const c=oppQueue.shift();if(!enemyShots[c]){t=c;break;}}
+    if(t===null){const f=[];for(let i=0;i<100;i++)if(!enemyShots[i])f.push(i);t=f[Math.floor(Math.random()*f.length)];}
+    if(yourG[t]!==null){ enemyShots[t]='hit'; const [r,c]=rc(t); [[r-1,c],[r+1,c],[r,c-1],[r,c+1]].forEach(([rr,cc])=>{if(rr>=0&&rr<10&&cc>=0&&cc<10){const idx=rr*10+cc;if(!enemyShots[idx])oppQueue.push(idx);}}); const sh=shipAt(yourShips,t); if(isSunk(sh,enemyShots)){sh.cells.forEach(c2=>enemyShots[c2]='sunk');$('#status').textContent=x.sunkOpp('PC');} render(); if(fleetSunk(yourShips,enemyShots)){phase='over';$('#status').textContent=x.oppWin;return;} }
+    else { enemyShots[t]='miss'; render(); }
+    phase='you'; setTimeout(()=>{ if(phase==='you')$('#status').innerHTML='<span class="hl">'+x.yourTurn+'</span>'; },600); }
+  function reset(){ yourG=empty();yourShips=[];placeIdx=0;orient='h'; enemyG=empty();enemyShips=[];yourShots=empty();enemyShots=empty();phase='place';oppQueue=[]; placeRandom(enemyG,enemyShips); $('#orientLabel').textContent='↔'; $('#placeCtrls').style.display='flex'; $('#battleCtrls').style.display='none'; $('#enemyGrid').classList.add('locked'); $('#startBtn').disabled=true; buildGrids(fire); renderPlacement(); }
+  reset();
+}
+
+/* =========================== ONLINE =========================== */
+async function runOnline(){
+  const m0=await store.getMatch(matchId); if(!m0){ location.href='../../lobby.html'; return; }
+  const opp=m0.players.find(p=>p!==me.nick)||'???';
+  $('#t-enemy').textContent='🎯 '+opp; $('#t-yours').textContent=s().yours; $('#t-async').textContent=s().asyncON;
+  $('#startBtn').textContent=s().ready; $('#t-new').textContent=s().backLobby;
+  yourG=empty();yourShips=[];placeIdx=0;orient='h';
+  let placedDom=false, started=false;
+  function ensureDom(){ if(!placedDom){ buildGrids(fire); placedDom=true; } }
+  window.startBattle=async()=>{ if(placeIdx<SHIPS.length)return; const cur=await store.getMatch(matchId); const ns=clone(cur.state||{}); ns.fleets=ns.fleets||{}; ns.shots=ns.shots||{}; ns.ready=ns.ready||{};
+    ns.fleets[me.nick]=yourShips.map(z=>({k:z.k,n:z.n,cells:z.cells})); ns.shots[me.nick]=empty(); ns.ready[me.nick]=true;
+    const bothReady = ns.ready[me.nick] && ns.ready[opp];
+    await store.updateMatch(matchId,{state:ns, turn: cur.players[0]});
+    $('#placeCtrls').style.display='none'; $('#battleCtrls').style.display='flex'; };
+  window.goLobbyOrReset=()=>location.href='../../lobby.html';
+  async function fire(i){ const cur=window.__cur; if(!cur||cur.status!=='active'||cur.turn!==me.nick)return; const st=cur.state; if(st.phase!=='battle')return;
+    const sh=(st.shots&&st.shots[opp])?[...st.shots[opp]]:empty(); if(sh[i])return;
+    const fleet=(st.fleets&&st.fleets[opp])||[]; const hitShip=fleet.find(z=>z.cells.includes(i));
+    sh[i]=hitShip?'hit':'miss';
+    if(hitShip && hitShip.cells.every(c=>sh[c]==='hit'||sh[c]==='sunk')) hitShip.cells.forEach(c=>sh[c]='sunk');
+    const ns=clone(st); ns.shots=ns.shots||{}; ns.shots[opp]=sh;
+    const allSunk=fleet.length===5 && fleet.every(z=>z.cells.every(c=>sh[c]==='hit'||sh[c]==='sunk'));
+    const patch={ state:ns, turn:opp }; if(allSunk){ patch.status='done'; patch.winner=me.nick; }
+    await store.updateMatch(matchId,patch);
+    if(allSunk) await store.addPoints(me.nick,5);
+  }
+  function renderBattle(m){ const st=m.state, x=s(); const myShots=(st.shots&&st.shots[opp])||empty(); const oppShots=(st.shots&&st.shots[me.nick])||empty(); const myFleetCells=new Set(); (st.fleets&&st.fleets[me.nick]||[]).forEach(z=>z.cells.forEach(c=>myFleetCells.add(c)));
+    for(let i=0;i<100;i++){ const ec=document.querySelector(`#enemyGrid .c[data-i="${i}"]`);
+      if(myShots[i]==='sunk'){ec.className='c sunk';ec.textContent='🔥';}else if(myShots[i]==='hit'){ec.className='c hit';ec.textContent='✕';}else if(myShots[i]==='miss'){ec.className='c miss';ec.textContent='•';}else{ec.className='c';ec.textContent='';}
+      const yc=document.querySelector(`#yourGrid .c[data-i="${i}"]`); yc.className='c'+(myFleetCells.has(i)?' ship':'');
+      if(oppShots[i]==='sunk'){yc.className='c sunk';yc.textContent='🔥';}else if(oppShots[i]==='hit'){yc.className='c hit';yc.textContent='✕';}else if(oppShots[i]==='miss'){yc.className='c miss';yc.textContent='•';}else yc.textContent='';
+    }
+    // fleet tags
+    const enemyFleet=(st.fleets&&st.fleets[opp])||[]; const ef=$('#enemyFleet'); ef.innerHTML=''; SHIPS.forEach((shp,id)=>{ const ship=enemyFleet[id]; const sunk=ship&&ship.cells.every(c=>myShots[c]==='hit'||myShots[c]==='sunk'); const t=document.createElement('span');t.className='stag'+(sunk?' sunk':'');t.textContent=x.ships[shp.k]+' ('+shp.n+')';ef.appendChild(t);});
+    const myFleet=(st.fleets&&st.fleets[me.nick])||[]; const yf=$('#yourFleet'); yf.innerHTML=''; SHIPS.forEach((shp,id)=>{ const ship=myFleet[id]; const sunk=ship&&ship.cells.every(c=>oppShots[c]==='hit'||oppShots[c]==='sunk'); const t=document.createElement('span');t.className='stag'+(sunk?' sunk':'');t.textContent=x.ships[shp.k]+' ('+shp.n+')';yf.appendChild(t);});
+    if(m.status==='done'){ $('#enemyGrid').classList.add('locked'); $('#status').innerHTML = m.winner===me.nick ? '<span class="hl">'+x.youWin+'</span>' : x.oppWin; return; }
+    const myTurn = m.turn===me.nick; $('#enemyGrid').classList.toggle('locked', !myTurn);
+    $('#status').innerHTML = myTurn ? '<span class="hl">'+x.yourTurn+'</span>' : x.oppTurn(opp);
+  }
+  function render(m){ window.__cur=m; ensureDom(); const st=m.state||{}; const ready=st.ready||{};
+    if(!ready[me.nick]){ // ancora in piazzamento (mio)
+      $('#placeCtrls').style.display='flex'; $('#battleCtrls').style.display='none'; $('#enemyGrid').classList.add('locked'); renderPlacement(); return; }
+    if(!ready[opp]){ // ho schierato, aspetto l'altro
+      $('#placeCtrls').style.display='none'; $('#battleCtrls').style.display='flex'; $('#enemyGrid').classList.add('locked');
+      // mostra la mia flotta a destra
+      for(let i=0;i<100;i++){ const yc=document.querySelector(`#yourGrid .c[data-i="${i}"]`); yc.className='c'+(yourG[i]!==null?' ship':''); yc.textContent=''; const ec=document.querySelector(`#enemyGrid .c[data-i="${i}"]`); ec.className='c'; ec.textContent=''; }
+      $('#status').textContent=s().waitOpp(opp); return; }
+    $('#placeCtrls').style.display='none'; $('#battleCtrls').style.display='flex';
+    renderBattle(m);
+  }
+  store.subscribeMatch(matchId, m=>{ if(m) render(m); });
+}
+
+/* boot */
+$('#t-lobby').textContent=s().lobby; $('#t-title').textContent=s().title;
+if(ONLINE) runOnline(); else runAI();
 </script>
 </body>
 </html>

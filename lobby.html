@@ -310,7 +310,9 @@ function openChallenge(i,c){
       if(g.status!=='ready'){ toast(t(g.key)+' — '+tt('soon')); return; }
       if(g.online){
         // vera partita online: crea match condiviso + invia la sfida col matchId
-        const initState = g.id==='hangman' ? { secret:{}, rows:{}, done:{} } : { board:['','','','','','','','',''] };
+        const initState = g.id==='hangman' ? { secret:{}, rows:{}, done:{} }
+          : g.id==='battleship' ? { fleets:{}, shots:{}, ready:{}, phase:'placing' }
+          : { board:['','','','','','','','',''] };
         const match = await store.createMatch(g.id, [me.nick, c.nick], initState);
         await store.sendChallenge(g.id, me.nick, c.nick, match.id);
         toast(tt('sent')(c.nick, t(g.key)));
