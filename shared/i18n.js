@@ -34,6 +34,13 @@ export const STR = {
     // tris
     yourTurnMsg: 'Tocca a te!', oppTurnMsg: 'Turno dell\'avversario…', youWin: '🏆 Hai vinto!',
     oppWin: 'Hai perso!', draw: 'Pareggio!', rematch: 'Rivincita', wins: 'Vittorie', vs: 'contro',
+    // scrabble
+    sc_play:'Conferma', sc_recall:'Ritira', sc_exchange:'Cambia', sc_pass:'Passa',
+    sc_setup:'Preparazione partita…', sc_pickTile:'Seleziona una tessera dal leggio',
+    sc_blankPrompt:'Quale lettera rappresenta il jolly? (A-Z)',
+    sc_center:'La prima parola deve passare per il centro',
+    sc_noword:'Devi formare almeno una parola', sc_invalid:'Parola non valida:',
+    sc_bagEmpty:'Sacchetto vuoto', sc_pickExchange:'Seleziona una tessera da cambiare',
   },
   en: {
     lobby: 'Lobby', back: 'Back', save: 'Save', cancel: 'Cancel',
@@ -63,6 +70,13 @@ export const STR = {
     g_backgammon: 'Backgammon', g_hangman: 'Hangman', g_uno: 'Uno', g_ludo: 'Ludo', g_pictionary: 'Pictionary',
     yourTurnMsg: 'Your turn!', oppTurnMsg: 'Opponent\'s turn…', youWin: '🏆 You won!',
     oppWin: 'You lost!', draw: 'Draw!', rematch: 'Rematch', wins: 'Wins', vs: 'vs',
+    // scrabble
+    sc_play:'Play', sc_recall:'Recall', sc_exchange:'Swap', sc_pass:'Pass',
+    sc_setup:'Setting up game…', sc_pickTile:'Pick a tile from your rack',
+    sc_blankPrompt:'Which letter does the blank stand for? (A-Z)',
+    sc_center:'The first word must cross the center',
+    sc_noword:'You must form at least one word', sc_invalid:'Invalid word:',
+    sc_bagEmpty:'Bag is empty', sc_pickExchange:'Pick a tile to swap',
   }
 };
 

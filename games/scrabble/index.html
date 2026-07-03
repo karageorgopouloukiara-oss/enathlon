@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Enathlon — Scrabble</title>
+  <link rel="stylesheet" href="../../shared/theme.css">
+  <style>
+    .wrap { width:100%; max-width:640px; margin:0 auto; }
+    .topbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+    .gtitle { text-align:center; font-weight:900; font-size:20px; margin-bottom:8px; }
+    .players { display:flex; gap:12px; margin-bottom:12px; }
+    .pl { flex:1; display:flex; align-items:center; gap:10px; background:var(--panel-2); border:2px solid transparent; border-radius:14px; padding:8px 10px; }
+    .pl.turn { border-color:var(--lime); }
+    .pl .nm { font-weight:900; font-size:14px; } .pl .sc { font-size:12px; color:var(--text-mut); font-weight:800; }
+    .status { text-align:center; font-weight:800; font-size:14px; min-height:22px; margin-bottom:10px; color:#cfe0ec; }
+    .status .hl { color:var(--lime); }
+    .board { display:grid; grid-template-columns:repeat(15,1fr); gap:2px; background:#0d2b3a; padding:6px; border-radius:10px; aspect-ratio:1; }
+    .sq { position:relative; background:rgba(255,255,255,0.06); border-radius:3px; display:flex; align-items:center; justify-content:center; font-size:8px; font-weight:800; color:#7fa8bd; cursor:pointer; }
+    .sq.TW{background:#c0392b;color:#fff}.sq.DW{background:#e07a5f;color:#fff}
+    .sq.TL{background:#2d6a8f;color:#fff}.sq.DL{background:#5a9bc2;color:#fff}
+    .sq.center{background:#e07a5f;color:#fff}
+    .sq.tile,.rack .tile { background:var(--lime); color:#123; font-weight:900; }
+    .sq.tile .v,.rack .tile .v { position:absolute; right:1px; bottom:0; font-size:6px; }
+    .sq.tile .l,.rack .tile .l { font-size:11px; }
+    .sq.pending { outline:2px solid var(--lime); }
+    .rack { display:flex; gap:6px; justify-content:center; margin:14px 0; min-height:44px; }
+    .rack .tile { width:36px; height:40px; border-radius:6px; display:flex; align-items:center; justify-content:center; position:relative; cursor:pointer; }
+    .rack .tile.sel { outline:3px solid #fff; }
+    .actions { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
+    .actions button { border:none; border-radius:12px; padding:10px 16px; font-weight:800; cursor:pointer; }
+    .btn-play{background:var(--lime);color:#123}.btn-play:disabled{opacity:.4;cursor:default}
+    .btn-sec{background:var(--panel-2);color:#cfe0ec}
+    .loading { text-align:center; font-weight:800; color:#cfe0ec; padding:30px; }
+    .hidden { display:none; }
+  </style>
+</head>
+<body>
+  <div class="page center-screen">
+    <div class="wrap">
+      <div class="topbar">
+        <a href="../../lobby.html" class="back">←</a>
+        <div class="gtitle">🔤 <span id="gLang"></span></div>
+        <div style="width:20px"></div>
+      </div>
+      <div class="players">
+        <div class="pl" id="pYou"><div class="nm" id="youName">—</div><div class="sc" id="youScore">0</div></div>
+        <div class="pl" id="pOpp"><div class="nm" id="oppName">—</div><div class="sc" id="oppScore">0</div></div>
+      </div>
+      <div class="status" id="status"></div>
+      <div id="loading" class="loading">…</div>
+      <div id="game" class="hidden">
+        <div class="board" id="board"></div>
+        <div class="rack" id="rack"></div>
+        <div class="actions">
+          <button class="btn-play" id="btnPlay" data-t="sc_play">Conferma</button>
+          <button class="btn-sec" id="btnRecall" data-t="sc_recall">Ritira</button>
+          <button class="btn-sec" id="btnExchange" data-t="sc_exchange">Cambia</button>
+          <button class="btn-sec" id="btnPass" data-t="sc_pass">Passa</button>
+        </div>
+      </div>
+    </div>
+    <div id="toast" class="toast"></div>
+  </div>
+  <script type="module" src="./scrabble.js"></script>
+</body>
+</html>

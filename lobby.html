@@ -310,8 +310,14 @@ function openChallenge(i,c){
       if(g.status!=='ready'){ toast(t(g.key)+' — '+tt('soon')); return; }
       if(g.online){
         // vera partita online: crea match condiviso + invia la sfida col matchId
+        let lang = null;
+        if(g.id==='scrabble'){
+          lang = await pickLang();          // mini scelta IT/EN
+          if(!lang) return;                 // annullata
+        }
         const initState = g.id==='hangman' ? { secret:{}, rows:{}, done:{} }
           : g.id==='battleship' ? { fleets:{}, shots:{}, ready:{}, phase:'placing' }
+          : g.id==='scrabble' ? { lang, phase:'init' }
           : { board:['','','','','','','','',''] };
         const match = await store.createMatch(g.id, [me.nick, c.nick], initState);
         await store.sendChallenge(g.id, me.nick, c.nick, match.id);
@@ -324,6 +330,22 @@ function openChallenge(i,c){
     };
     dd.appendChild(it); });
   dd.classList.add('open');
+}
+
+function pickLang(){
+  return new Promise(resolve => {
+    const ov = document.createElement('div');
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:9999';
+    ov.innerHTML = `<div style="background:var(--panel-2);padding:22px;border-radius:16px;text-align:center;min-width:220px">
+      <div style="font-weight:900;margin-bottom:14px">🔤 ${t('g_scrabble')} — ${getLang()==='it'?'Lingua':'Language'}</div>
+      <div style="display:flex;gap:10px;justify-content:center">
+        <button data-l="it" style="flex:1;padding:12px;border:none;border-radius:12px;background:var(--lime);color:#123;font-weight:800;cursor:pointer">🇮🇹 IT</button>
+        <button data-l="en" style="flex:1;padding:12px;border:none;border-radius:12px;background:var(--lime);color:#123;font-weight:800;cursor:pointer">🇬🇧 EN</button>
+      </div></div>`;
+    ov.onclick = (e) => { if(e.target===ov){ ov.remove(); resolve(null); } };
+    ov.querySelectorAll('button').forEach(b => b.onclick = () => { ov.remove(); resolve(b.dataset.l); });
+    document.body.appendChild(ov);
+  });
 }
 
 /* ---- partite in corso (tazza) + badge ---- */
