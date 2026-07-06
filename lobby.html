@@ -210,6 +210,19 @@ import { GAMES, gameById } from './shared/games.js';
 import * as auth from './shared/auth.js';
 import * as store from './shared/store.js';
 
+// Posizione iniziale scacchi (array piatto di 64, codifica FEN). Inlined per non
+// accoppiare la lobby a un modulo di gioco; deve coincidere con engine.initialBoard().
+const CHESS_START = [
+  'r','n','b','q','k','b','n','r',
+  'p','p','p','p','p','p','p','p',
+  '','','','','','','','',
+  '','','','','','','','',
+  '','','','','','','','',
+  '','','','','','','','',
+  'P','P','P','P','P','P','P','P',
+  'R','N','B','Q','K','B','N','R',
+];
+
 const $ = (s)=>document.querySelector(s);
 function toast(m){ const e=$('#toast'); e.textContent=m; e.classList.add('show'); clearTimeout(window._t); window._t=setTimeout(()=>e.classList.remove('show'),1900); }
 
@@ -318,6 +331,11 @@ function openChallenge(i,c){
         const initState = g.id==='hangman' ? { secret:{}, rows:{}, done:{} }
           : g.id==='battleship' ? { fleets:{}, shots:{}, ready:{}, phase:'placing' }
           : g.id==='scrabble' ? { lang, phase:'init' }
+          : g.id==='chess' ? { board: CHESS_START.slice(),
+                               castling:{ wK:true, wQ:true, bK:true, bQ:true },
+                               epTarget:null,
+                               colors:{ [me.nick]:'w', [c.nick]:'b' },
+                               lastMove:null }
           : { board:['','','','','','','','',''] };
         const match = await store.createMatch(g.id, [me.nick, c.nick], initState);
         await store.sendChallenge(g.id, me.nick, c.nick, match.id);

@@ -41,6 +41,11 @@ export const STR = {
     sc_center:'La prima parola deve passare per il centro',
     sc_noword:'Devi formare almeno una parola', sc_invalid:'Parola non valida:',
     sc_bagEmpty:'Sacchetto vuoto', sc_pickExchange:'Seleziona una tessera da cambiare',
+    // scacchi
+    ch_resign:'Arrendi', ch_resignConfirm:'Sicuro di volerti arrendere?',
+    ch_youInCheck:'Sei sotto scacco!', ch_check:'Scacco!',
+    ch_stalemate:'Stallo — patta!', ch_promote:'Promozione',
+    ch_resigned:'Si è arreso', ch_white:'Bianco', ch_black:'Nero',
   },
   en: {
     lobby: 'Lobby', back: 'Back', save: 'Save', cancel: 'Cancel',
@@ -77,6 +82,11 @@ export const STR = {
     sc_center:'The first word must cross the center',
     sc_noword:'You must form at least one word', sc_invalid:'Invalid word:',
     sc_bagEmpty:'Bag is empty', sc_pickExchange:'Pick a tile to swap',
+    // chess
+    ch_resign:'Resign', ch_resignConfirm:'Are you sure you want to resign?',
+    ch_youInCheck:'You are in check!', ch_check:'Check!',
+    ch_stalemate:'Stalemate — draw!', ch_promote:'Promotion',
+    ch_resigned:'Resigned', ch_white:'White', ch_black:'Black',
   }
 };
 

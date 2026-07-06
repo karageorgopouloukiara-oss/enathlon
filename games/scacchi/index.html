@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Enathlon — Scacchi</title>
+  <link rel="stylesheet" href="../../shared/theme.css">
+  <style>
+    .wrap { width:100%; max-width:520px; }
+    .topbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+    .gtitle { text-align:center; font-weight:900; font-size:20px; margin-bottom:12px; }
+    .players { display:flex; gap:12px; margin-bottom:16px; }
+    .pl { flex:1; display:flex; align-items:center; gap:10px; background:var(--panel-2); border:2px solid transparent; border-radius:14px; padding:10px; transition:border-color .2s; }
+    .pl.turn { border-color:var(--lime); }
+    .pl .av { width:40px; height:54px; } .pl .av svg { width:100%; height:100%; }
+    .pl .nm { font-weight:900; font-size:14px; } .pl .mk { font-size:11px; font-weight:800; color:var(--text-mut); }
+    .vs { align-self:center; font-weight:900; color:#5a7a96; font-size:13px; }
+    .status { text-align:center; font-weight:800; font-size:14px; min-height:22px; margin-bottom:14px; color:#cfe0ec; }
+    .status .hl { color:var(--lime); }
+    .board { display:grid; grid-template-columns:repeat(8,1fr); width:360px; max-width:100%; aspect-ratio:1; margin:0 auto; border-radius:10px; overflow:hidden; border:3px solid rgba(255,255,255,0.10); }
+    .sq { display:flex; align-items:center; justify-content:center; position:relative; cursor:pointer; user-select:none; }
+    .sq.light { background:#e9edf2; } .sq.dark { background:#5b7183; }
+    .sq .pc { font-size:30px; line-height:1; }
+    .sq .pc.w { color:#fbfdff; text-shadow:0 1px 2px rgba(0,0,0,0.55); }
+    .sq .pc.b { color:#1a2733; text-shadow:0 1px 1px rgba(255,255,255,0.25); }
+    .sq.sel { box-shadow:inset 0 0 0 4px var(--lime); }
+    .sq.last { box-shadow:inset 0 0 0 4px rgba(199,255,31,0.45); }
+    .sq.target::after { content:''; width:26%; height:26%; border-radius:50%; background:rgba(199,255,31,0.75); position:absolute; }
+    .sq.target.cap::after { width:82%; height:82%; background:transparent; border:4px solid rgba(199,255,31,0.75); border-radius:50%; }
+    .sq.check { background:#c0392b !important; }
+    .footer { display:flex; justify-content:center; gap:10px; margin-top:18px; }
+    .promo-ov { position:fixed; inset:0; background:rgba(0,0,0,.55); display:flex; align-items:center; justify-content:center; z-index:9999; }
+    .promo-card { background:var(--panel-2); padding:20px; border-radius:16px; text-align:center; }
+    .promo-row { display:flex; gap:10px; justify-content:center; margin-top:12px; }
+    .promo-row button { font-size:34px; width:60px; height:60px; border:none; border-radius:12px; background:var(--lime); cursor:pointer; }
+  </style>
+</head>
+<body>
+  <div class="page center-screen">
+    <div class="panel wrap">
+      <div class="topbar">
+        <div class="logo"><div class="logo-text"><span class="ena">EN</span><span class="thl">Athl</span><span class="on">ON</span></div></div>
+        <button class="btn btn-ghost" onclick="location.href='../../lobby.html'">‹ <span data-t="lobby"></span></button>
+      </div>
+      <div class="gtitle" data-t="g_chess"></div>
+      <div class="players">
+        <div class="pl turn" id="pYou"><div class="av" id="youAv"></div><div><div class="nm" id="youName"></div><div class="mk" id="youMark"></div></div></div>
+        <div class="vs" data-t="vs"></div>
+        <div class="pl" id="pOpp"><div class="av" id="oppAv"></div><div><div class="nm" id="oppName"></div><div class="mk" id="oppMark"></div></div></div>
+      </div>
+      <div class="status" id="status"></div>
+      <div class="board" id="board"></div>
+      <div class="footer"><button class="btn btn-ghost" id="resign" data-t="ch_resign"></button></div>
+    </div>
+  </div>
+  <div class="toast" id="toast"></div>
+  <script type="module" src="scacchi.js"></script>
+</body>
+</html>
