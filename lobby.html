@@ -223,6 +223,10 @@ const CHESS_START = [
   'R','N','B','Q','K','B','N','R',
 ];
 
+	// Posizione iniziale backgammon (24 punti; + = Bianco, − = Nero).
+	// Deve coincidere con engine.initialPoints() del backgammon.
+	const BG_START = [-2,0,0,0,0,5, 0,3,0,0,0,-5, 5,0,0,0,-3,0, -5,0,0,0,0,2];
+
 const $ = (s)=>document.querySelector(s);
 function toast(m){ const e=$('#toast'); e.textContent=m; e.classList.add('show'); clearTimeout(window._t); window._t=setTimeout(()=>e.classList.remove('show'),1900); }
 
@@ -336,6 +340,13 @@ function openChallenge(i,c){
                                epTarget:null,
                                colors:{ [me.nick]:'w', [c.nick]:'b' },
                                lastMove:null }
+          : g.id==='backgammon' ? { points: BG_START.slice(),
+                                    bar:{ w:0, b:0 },
+                                    off:{ w:0, b:0 },
+                                    colors:{ [me.nick]:'w', [c.nick]:'b' },
+                                    seed: Math.floor(Math.random() * 2147483647),
+                                    turnIndex: 0,
+                                    lastMove: null }
           : { board:['','','','','','','','',''] };
         const match = await store.createMatch(g.id, [me.nick, c.nick], initState);
         await store.sendChallenge(g.id, me.nick, c.nick, match.id);

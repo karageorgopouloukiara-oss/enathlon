@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Enathlon — Backgammon</title>
+  <link rel="stylesheet" href="../../shared/theme.css">
+  <style>
+    .wrap { width:100%; max-width:640px; }
+    .topbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+    .gtitle { text-align:center; font-weight:900; font-size:20px; margin-bottom:12px; }
+    .players { display:flex; gap:12px; margin-bottom:12px; }
+    .pl { flex:1; display:flex; align-items:center; gap:10px; background:var(--panel-2); border:2px solid transparent; border-radius:14px; padding:10px; transition:border-color .2s; }
+    .pl.turn { border-color:var(--lime); }
+    .pl .av { width:40px; height:54px; } .pl .av svg { width:100%; height:100%; }
+    .pl .nm { font-weight:900; font-size:14px; } .pl .mk { font-size:11px; font-weight:800; color:var(--text-mut); }
+    .vs { align-self:center; font-weight:900; color:#5a7a96; font-size:13px; }
+    .status { text-align:center; font-weight:800; font-size:14px; min-height:22px; margin-bottom:10px; color:#cfe0ec; }
+    .status .hl { color:var(--lime); }
+
+    .dice { display:flex; gap:8px; justify-content:center; margin-bottom:10px; min-height:38px; }
+    .die { width:34px; height:34px; border-radius:8px; background:#f2f5f8; color:#1a2733; font-weight:900;
+           display:flex; align-items:center; justify-content:center; font-size:18px; box-shadow:0 2px 4px rgba(0,0,0,.35); }
+    .die.used { opacity:.28; }
+
+    .board { background:#3d5163; border:3px solid rgba(255,255,255,.10); border-radius:10px; padding:6px; }
+    .half { display:flex; height:150px; }
+    .half.bottom { margin-top:6px; }
+    .quad { display:flex; flex:1; gap:2px; }
+    .pt { flex:1; position:relative; display:flex; flex-direction:column; align-items:center; cursor:pointer; }
+    .half.top .pt { justify-content:flex-start; }
+    .half.bottom .pt { justify-content:flex-end; }
+    .pt::before { content:''; position:absolute; inset:0; z-index:0; }
+    .half.top .pt::before    { clip-path:polygon(0 0, 100% 0, 50% 100%); }
+    .half.bottom .pt::before { clip-path:polygon(50% 0, 100% 100%, 0 100%); }
+    .pt.odd::before  { background:#e9edf2; }
+    .pt.even::before { background:#5b7183; }
+    .pt.sel::before    { background:var(--lime); }
+    .pt.target::before { background:rgba(199,255,31,.55); }
+    .chk { width:20px; height:20px; border-radius:50%; z-index:1; margin:1px 0; flex:0 0 auto; }
+    .chk.w { background:#fbfdff; border:2px solid #b9c6d2; }
+    .chk.b { background:#1a2733; border:2px solid #55606b; }
+    .pt .more { z-index:1; font-size:10px; font-weight:900; color:#c7ff1f; }
+
+    .bar { width:34px; background:#2b3b4a; border-radius:6px; margin:0 4px; display:flex; flex-direction:column;
+           align-items:center; justify-content:center; gap:2px; cursor:pointer; }
+    .bar.sel   { background:var(--lime); }
+    .bar.target{ background:rgba(199,255,31,.55); }
+
+    .trays { display:flex; justify-content:space-between; gap:10px; margin-top:10px; }
+    .tray { flex:1; background:var(--panel-2); border:2px solid transparent; border-radius:10px; padding:8px;
+            text-align:center; font-weight:800; font-size:12px; cursor:pointer; }
+    .tray.target { border-color:var(--lime); }
+    .tray .n { font-size:18px; font-weight:900; color:var(--lime); }
+
+    .footer { display:flex; justify-content:center; gap:8px; margin-top:14px; flex-wrap:wrap; }
+  </style>
+</head>
+<body>
+  <div class="page center-screen">
+    <div class="panel wrap">
+      <div class="topbar">
+        <div class="logo"><div class="logo-text"><span class="ena">EN</span><span class="thl">Athl</span><span class="on">ON</span></div></div>
+        <button class="btn btn-ghost" onclick="location.href='../../lobby.html'">‹ <span data-t="lobby"></span></button>
+      </div>
+      <div class="gtitle" data-t="g_backgammon"></div>
+      <div class="players">
+        <div class="pl turn" id="pYou"><div class="av" id="youAv"></div><div><div class="nm" id="youName"></div><div class="mk" id="youMark"></div></div></div>
+        <div class="vs" data-t="vs"></div>
+        <div class="pl" id="pOpp"><div class="av" id="oppAv"></div><div><div class="nm" id="oppName"></div><div class="mk" id="oppMark"></div></div></div>
+      </div>
+      <div class="status" id="status"></div>
+      <div class="dice" id="dice"></div>
+
+      <div class="board">
+        <div class="half top">
+          <div class="quad" id="topLeft"></div>
+          <div class="bar" id="bar"></div>
+          <div class="quad" id="topRight"></div>
+        </div>
+        <div class="half bottom">
+          <div class="quad" id="botLeft"></div>
+          <div class="bar" id="barB"></div>
+          <div class="quad" id="botRight"></div>
+        </div>
+      </div>
+
+      <div class="trays">
+        <div class="tray" id="offMe"><span data-t="bg_off"></span><div class="n" id="offMeN">0</div></div>
+        <div class="tray" id="offOpp"><span data-t="bg_off"></span><div class="n" id="offOppN">0</div></div>
+      </div>
+
+      <div class="footer">
+        <button class="btn btn-primary" id="confirm" data-t="bg_confirm"></button>
+        <button class="btn btn-ghost" id="undo" data-t="bg_undo"></button>
+        <button class="btn btn-ghost" id="pass" data-t="bg_pass"></button>
+        <button class="btn btn-ghost" id="resign" data-t="bg_resign"></button>
+      </div>
+    </div>
+  </div>
+  <div class="toast" id="toast"></div>
+  <script type="module" src="backgammon.js"></script>
+</body>
+</html>

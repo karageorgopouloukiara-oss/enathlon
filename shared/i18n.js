@@ -46,6 +46,11 @@ export const STR = {
     ch_youInCheck:'Sei sotto scacco!', ch_check:'Scacco!',
     ch_stalemate:'Stallo — patta!', ch_promote:'Promozione',
     ch_resigned:'Si è arreso', ch_white:'Bianco', ch_black:'Nero',
+    // backgammon
+    bg_confirm:'Conferma', bg_undo:'Ritira', bg_pass:'Passa',
+    bg_noMoves:'Nessuna mossa possibile', bg_dice:'Dadi',
+    bg_bar:'Barra', bg_off:'Fuori',
+    bg_resign:'Arrendi', bg_resignConfirm:'Sicuro di volerti arrendere?',
   },
   en: {
     lobby: 'Lobby', back: 'Back', save: 'Save', cancel: 'Cancel',
@@ -87,6 +92,11 @@ export const STR = {
     ch_youInCheck:'You are in check!', ch_check:'Check!',
     ch_stalemate:'Stalemate — draw!', ch_promote:'Promotion',
     ch_resigned:'Resigned', ch_white:'White', ch_black:'Black',
+    // backgammon
+    bg_confirm:'Confirm', bg_undo:'Undo', bg_pass:'Pass',
+    bg_noMoves:'No legal moves', bg_dice:'Dice',
+    bg_bar:'Bar', bg_off:'Off',
+    bg_resign:'Resign', bg_resignConfirm:'Are you sure you want to resign?',
   }
 };
 
