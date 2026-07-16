@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Uno · Enathlon</title>
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  .wrap{width:100%;max-width:720px}
+  .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+  .gtitle{text-align:center;font-weight:900;font-size:20px;margin-bottom:14px}
+  .players-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;justify-content:center}
+  .pchip{padding:8px 12px;border-radius:12px;background:var(--panel);display:flex;gap:8px;align-items:center;font-weight:700}
+  .pchip.turn{outline:3px solid var(--lime)}
+  .pchip.retired{opacity:.4;text-decoration:line-through}
+  .pchip .uno{color:#e33;font-weight:900}
+  .table{display:flex;flex-direction:column;align-items:center;gap:10px;margin:18px 0}
+  .top-card{width:78px;height:112px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:36px;font-weight:900;color:#fff;box-shadow:0 6px 18px rgba(0,0,0,.35)}
+  .color-dot{width:18px;height:18px;border-radius:50%;display:inline-block;vertical-align:middle}
+  .dir{font-size:22px}
+  .hand{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:16px}
+  .card{width:60px;height:88px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:900;color:#fff;cursor:default;box-shadow:0 3px 10px rgba(0,0,0,.3)}
+  .card.play{cursor:pointer;outline:2px solid var(--lime)}
+  .card.play:hover{transform:translateY(-6px)}
+  .card.dim{opacity:.5}
+  .card.r{background:#d33}.card.g{background:#2a2}.card.b{background:#26c}.card.y{background:#d9a300}
+  .card.wild{background:linear-gradient(135deg,#d33 0 25%,#2a2 25% 50%,#26c 50% 75%,#d9a300 75%)}
+  .actions{display:flex;gap:10px;justify-content:center;margin-top:16px;flex-wrap:wrap}
+  .actions button{padding:12px 18px;border:none;border-radius:12px;font-weight:800;cursor:pointer;background:var(--lime);color:#123}
+  .actions button.ghost{background:var(--panel)}
+  .actions button:disabled{opacity:.4;cursor:default}
+  .status{text-align:center;font-weight:800;margin:12px 0;min-height:24px}
+  .status .hl{color:var(--lime)}
+</style>
+</head>
+<body>
+  <div class="page center-screen">
+    <div class="panel wrap">
+      <div class="topbar">
+        <div class="logo"><div class="logo-text"><span class="ena">EN</span><span class="thl">Athl</span><span class="on">ON</span></div></div>
+        <button class="btn btn-ghost" onclick="location.href='../../lobby.html'">‹ <span data-t="lobby"></span></button>
+      </div>
+      <div class="gtitle">🟥 <span data-t="g_uno"></span></div>
+      <div class="players-row" id="players"></div>
+      <div class="table">
+        <div class="dir" id="dir"></div>
+        <div class="top-card" id="topCard"></div>
+        <div>colore: <span class="color-dot" id="colorDot"></span></div>
+      </div>
+      <div class="status" id="status"></div>
+      <div class="hand" id="hand"></div>
+      <div class="actions" id="actions"></div>
+    </div>
+  </div>
+  <script type="module" src="./uno.js"></script>
+</body>
+</html>

@@ -51,6 +51,13 @@ export const STR = {
     bg_noMoves:'Nessuna mossa possibile', bg_dice:'Dadi',
     bg_bar:'Barra', bg_off:'Fuori',
     bg_resign:'Arrendi', bg_resignConfirm:'Sicuro di volerti arrendere?',
+    // uno
+    un_turn:'Tocca a te', un_wait:(n)=>`Tocca a ${n}`, un_you:'Tu',
+    un_draw:'Pesca', un_pass:'Passa', un_playDrawn:'Gioca la carta pescata',
+    un_surrender:'Arrenditi', un_pickColor:'Scegli il colore',
+    un_uno:'UNO!', un_youWin:'Hai vinto! 🎉', un_winner:(n)=>`Ha vinto ${n}`,
+    un_retired:(n)=>`${n} si è ritirato`, un_cards:(n)=>`${n} carte`,
+    un_yourTurn:'È il tuo turno', un_players:(n)=>`${n} giocatori`,
   },
   en: {
     lobby: 'Lobby', back: 'Back', save: 'Save', cancel: 'Cancel',
@@ -97,6 +104,13 @@ export const STR = {
     bg_noMoves:'No legal moves', bg_dice:'Dice',
     bg_bar:'Bar', bg_off:'Off',
     bg_resign:'Resign', bg_resignConfirm:'Are you sure you want to resign?',
+    // uno
+    un_turn:'Your turn', un_wait:(n)=>`${n}'s turn`, un_you:'You',
+    un_draw:'Draw', un_pass:'Pass', un_playDrawn:'Play drawn card',
+    un_surrender:'Give up', un_pickColor:'Pick a color',
+    un_uno:'UNO!', un_youWin:'You win! 🎉', un_winner:(n)=>`${n} wins`,
+    un_retired:(n)=>`${n} gave up`, un_cards:(n)=>`${n} cards`,
+    un_yourTurn:'It\'s your turn', un_players:(n)=>`${n} players`,
   }
 };
 

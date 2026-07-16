@@ -209,6 +209,7 @@ import { ANIMALS, avatarSVG } from './shared/avatars.js';
 import { GAMES, gameById } from './shared/games.js';
 import * as auth from './shared/auth.js';
 import * as store from './shared/store.js';
+import { buildDeck, shuffle, deal } from './games/uno/engine.js';
 
 // Posizione iniziale scacchi (array piatto di 64, codifica FEN). Inlined per non
 // accoppiare la lobby a un modulo di gioco; deve coincidere con engine.initialBoard().
@@ -326,6 +327,21 @@ function openChallenge(i,c){
     it.onclick=async(e)=>{ e.stopPropagation(); dd.classList.remove('open');
       if(g.status!=='ready'){ toast(t(g.key)+' — '+tt('soon')); return; }
       if(g.online){
+        if (g.id === 'uno') {
+          const nicks = await pickPlayers(c, 6);      // [me escluso] 1..5 avversari
+          if (!nicks || nicks.length < 1) return;
+          const players = [me.nick, ...nicks];        // players[0] = me = primo a muovere
+          const dealt = deal(players, shuffle(buildDeck(), Math.random));
+          const initState = {
+            deck: dealt.deck, discard: dealt.discard, hands: dealt.hands,
+            color: dealt.color, direction: 1, retired: [], drawn: null
+          };
+          const match = await store.createMatch(g.id, players, initState);
+          for (const n of nicks) await store.sendChallenge(g.id, me.nick, n, match.id);
+          toast(tt('sent')(nicks.join(', '), t(g.key)));
+          setTimeout(() => location.href = g.path + '?match=' + match.id, 600);
+          return;
+        }
         // vera partita online: crea match condiviso + invia la sfida col matchId
         let lang = null;
         if(g.id==='scrabble'){
@@ -377,12 +393,45 @@ function pickLang(){
   });
 }
 
+/* Selezione 1-5 avversari per un gioco multi-giocatore.
+   `first` = collega già cliccato (preselezionato). Ritorna array di nick, o null. */
+async function pickPlayers(first, maxTotal) {
+  const all = (await store.listPlayers()).map(p => p.nick).filter(n => n !== me.nick);
+  const chosen = new Set([first.nick]);
+  return new Promise(resolve => {
+    const ov = document.createElement('div');
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:9999';
+    const list = all.map(n =>
+      `<label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;background:var(--panel);cursor:pointer">
+        <input type="checkbox" value="${n}" ${n===first.nick?'checked':''}> ${n}</label>`).join('');
+    ov.innerHTML = `<div style="background:var(--panel-2);padding:22px;border-radius:16px;min-width:260px;max-width:90vw">
+      <div style="font-weight:900;margin-bottom:12px">🟥 ${t('g_uno')} — ${getLang()==='it'?'Scegli i giocatori':'Pick players'}</div>
+      <div id="ppList" style="display:flex;flex-direction:column;gap:6px;max-height:40vh;overflow:auto;margin-bottom:14px">${list}</div>
+      <button id="ppGo" style="width:100%;padding:12px;border:none;border-radius:12px;background:var(--lime);color:#123;font-weight:800;cursor:pointer">${getLang()==='it'?'Inizia':'Start'}</button>
+    </div>`;
+    const update = () => {
+      ov.querySelectorAll('#ppList input').forEach(cb => {
+        cb.onchange = () => {
+          if (cb.checked && chosen.size >= maxTotal - 1) { cb.checked = false; return; }
+          cb.checked ? chosen.add(cb.value) : chosen.delete(cb.value);
+        };
+      });
+    };
+    update();
+    ov.querySelector('#ppGo').onclick = () => { ov.remove(); resolve([...chosen]); };
+    ov.onclick = (e) => { if (e.target === ov) { ov.remove(); resolve(null); } };
+    document.body.appendChild(ov);
+  });
+}
+
 /* ---- partite in corso (tazza) + badge ---- */
 async function renderOngoing(){
   const list=$('#ongList'); list.innerHTML='';
   const matches=await store.matchesFor(me.nick);
   if(!matches.length){ list.innerHTML=`<div class="empty">${tt('noOng')}</div>`; }
-  matches.forEach(m=>{ const g=gameById(m.game); const yt=m.turn===me.nick; const opp=m.players.find(p=>p!==me.nick)||'AI';
+  matches.forEach(m=>{ const g=gameById(m.game); const yt=m.turn===me.nick;
+    const opp = m.players.length>2 ? t('un_players')(m.players.length)
+                                   : (m.players.find(p=>p!==me.nick)||'AI');
     const d=document.createElement('div'); d.className='gitem';
     d.innerHTML=`<div class="ic">${g?g.icon:'🎮'}</div><div class="info"><div class="gn">${g?t(g.key):m.game} · ${opp}</div><div class="st ${yt?'your':'wait'}">${yt?tt('yourTurn'):tt('waiting')}</div></div><button class="res">${tt('resume')}</button>`;
     d.querySelector('.res').onclick=()=>{ if(g) location.href=g.path+'?match='+m.id; };
