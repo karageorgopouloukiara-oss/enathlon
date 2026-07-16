@@ -342,6 +342,24 @@ function openChallenge(i,c){
           setTimeout(() => location.href = g.path + '?match=' + match.id, 600);
           return;
         }
+        if (g.id === 'ludo') {
+          const nicks = await pickPlayers(c, 4);      // 1..3 avversari (max 4 totali)
+          if (!nicks || nicks.length < 1) return;
+          const players = [me.nick, ...nicks];        // players[0] = me = primo a muovere
+          // seats: 2 giocatori opposti [0,2]; altrimenti sequenziale
+          const seatOrder = players.length === 2 ? [0, 2] : [0, 1, 2, 3];
+          const seats = {}, tokens = {};
+          players.forEach((n, i) => { seats[n] = seatOrder[i]; tokens[n] = [-1, -1]; });
+          const initState = {
+            seed: Math.floor(Math.random() * 2147483647),
+            rollIndex: 0, pending: null, tokens, seats, retired: []
+          };
+          const match = await store.createMatch(g.id, players, initState);
+          for (const n of nicks) await store.sendChallenge(g.id, me.nick, n, match.id);
+          toast(tt('sent')(nicks.join(', '), t(g.key)));
+          setTimeout(() => location.href = g.path + '?match=' + match.id, 600);
+          return;
+        }
         // vera partita online: crea match condiviso + invia la sfida col matchId
         let lang = null;
         if(g.id==='scrabble'){

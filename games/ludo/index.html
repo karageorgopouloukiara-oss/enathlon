@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ludo · Enathlon</title>
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  .wrap{width:100%;max-width:560px}
+  .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+  .gtitle{text-align:center;font-weight:900;font-size:20px;margin-bottom:12px}
+  .players-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;justify-content:center}
+  .pchip{padding:6px 10px;border-radius:10px;background:var(--panel);font-weight:700;font-size:13px;display:flex;align-items:center;gap:6px}
+  .pchip.turn{outline:3px solid var(--lime)}
+  .pchip.retired{opacity:.4;text-decoration:line-through}
+  .pdot{width:12px;height:12px;border-radius:50%;display:inline-block}
+  .seat0{background:#d33}.seat1{background:#2a2}.seat2{background:#d9a300}.seat3{background:#26c}
+  #board{display:grid;grid-template-columns:repeat(15,1fr);grid-template-rows:repeat(15,1fr);
+         width:100%;aspect-ratio:1/1;gap:1px;background:#0e1620;border-radius:10px;padding:6px}
+  .cell{background:#12202b;border-radius:2px;position:relative}
+  .cell.ring{background:#1b2530}
+  .cell.safe{background:#243447}
+  .cell.safe::after{content:'★';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;color:#5b6b7b}
+  .cell.home0{background:rgba(221,51,51,.5)}.cell.home1{background:rgba(42,170,42,.5)}
+  .cell.home2{background:rgba(217,163,0,.5)}.cell.home3{background:rgba(38,102,204,.5)}
+  .cell.base0{background:#d33}.cell.base1{background:#2a2}.cell.base2{background:#d9a300}.cell.base3{background:#26c}
+  .cell.goal{background:#0e1620}
+  .token{position:absolute;inset:12%;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.5);cursor:default;z-index:2}
+  .token.t0{background:#d33}.token.t1{background:#2a2}.token.t2{background:#d9a300}.token.t3{background:#26c}
+  .token.playable{cursor:pointer;outline:2px solid var(--lime);outline-offset:1px}
+  .token.playable:hover{transform:scale(1.12)}
+  .status{text-align:center;font-weight:800;margin:12px 0;min-height:24px}
+  .status .hl{color:var(--lime)}
+  .actions{display:flex;gap:10px;justify-content:center;margin-top:8px;flex-wrap:wrap}
+  .actions button{padding:12px 18px;border:none;border-radius:12px;font-weight:800;cursor:pointer;background:var(--lime);color:#123}
+  .actions button.ghost{background:var(--panel)}
+  .die{font-size:28px;font-weight:900;text-align:center;min-height:34px}
+</style>
+</head>
+<body>
+  <div class="page center-screen">
+    <div class="panel wrap">
+      <div class="topbar">
+        <div class="logo"><div class="logo-text"><span class="ena">EN</span><span class="thl">Athl</span><span class="on">ON</span></div></div>
+        <button class="btn btn-ghost" onclick="location.href='../../lobby.html'">‹ <span data-t="lobby"></span></button>
+      </div>
+      <div class="gtitle">🎯 <span data-t="g_ludo"></span></div>
+      <div class="players-row" id="players"></div>
+      <div id="board"></div>
+      <div class="die" id="die"></div>
+      <div class="status" id="status"></div>
+      <div class="actions" id="actions"></div>
+    </div>
+  </div>
+  <script type="module" src="./ludo.js"></script>
+</body>
+</html>

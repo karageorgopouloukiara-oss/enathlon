@@ -58,6 +58,12 @@ export const STR = {
     un_uno:'UNO!', un_youWin:'Hai vinto! 🎉', un_winner:(n)=>`Ha vinto ${n}`,
     un_retired:(n)=>`${n} si è ritirato`, un_cards:(n)=>`${n} carte`,
     un_yourTurn:'È il tuo turno', un_players:(n)=>`${n} giocatori`,
+    // ludo
+    lu_turn:'Tocca a te', lu_wait:(n)=>`Tocca a ${n}`, lu_you:'Tu',
+    lu_roll:'Tira il dado', lu_surrender:'Arrenditi', lu_yourTurn:'È il tuo turno',
+    lu_youWin:'Hai vinto! 🎉', lu_winner:(n)=>`Ha vinto ${n}`,
+    lu_retired:(n)=>`${n} si è ritirato`, lu_noMove:(d)=>`Hai tirato ${d}: nessuna mossa`,
+    lu_rolled:(d)=>`Dado: ${d} — scegli una pedina`,
   },
   en: {
     lobby: 'Lobby', back: 'Back', save: 'Save', cancel: 'Cancel',
@@ -111,6 +117,12 @@ export const STR = {
     un_uno:'UNO!', un_youWin:'You win! 🎉', un_winner:(n)=>`${n} wins`,
     un_retired:(n)=>`${n} gave up`, un_cards:(n)=>`${n} cards`,
     un_yourTurn:'It\'s your turn', un_players:(n)=>`${n} players`,
+    // ludo
+    lu_turn:'Your turn', lu_wait:(n)=>`${n}'s turn`, lu_you:'You',
+    lu_roll:'Roll the die', lu_surrender:'Give up', lu_yourTurn:'It\'s your turn',
+    lu_youWin:'You win! 🎉', lu_winner:(n)=>`${n} wins`,
+    lu_retired:(n)=>`${n} gave up`, lu_noMove:(d)=>`You rolled ${d}: no move`,
+    lu_rolled:(d)=>`Die: ${d} — pick a token`,
   }
 };
 
