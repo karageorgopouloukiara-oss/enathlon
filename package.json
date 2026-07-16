@@ -1,6 +1,6 @@
 {
   "type": "module",
   "scripts": {
-    "test": "node --test 'games/scrabble/*.test.js' 'games/scacchi/*.test.js' 'games/backgammon/*.test.js' 'games/uno/*.test.js' 'games/ludo/*.test.js'"
+    "test": "node --test 'games/scrabble/*.test.js' 'games/scacchi/*.test.js' 'games/backgammon/*.test.js' 'games/uno/*.test.js' 'games/ludo/*.test.js' 'games/pictionary/*.test.js'"
   }
 }

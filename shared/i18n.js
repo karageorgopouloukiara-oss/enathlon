@@ -64,6 +64,14 @@ export const STR = {
     lu_youWin:'Hai vinto! 🎉', lu_winner:(n)=>`Ha vinto ${n}`,
     lu_retired:(n)=>`${n} si è ritirato`, lu_noMove:(d)=>`Hai tirato ${d}: nessuna mossa`,
     lu_rolled:(d)=>`Dado: ${d} — scegli una pedina`,
+    // pictionary
+    pi_you:'Tu', pi_wait:(n)=>`Tocca a ${n}`, pi_yourTurn:'È il tuo turno',
+    pi_draw:(w)=>`Disegna: ${w}`, pi_send:'Invia il disegno', pi_undo:'Annulla', pi_clear:'Pulisci',
+    pi_guessHint:'Cosa rappresenta?', pi_guessBtn:'Indovina', pi_tries:(n)=>`Tentativi rimasti: ${n}`,
+    pi_right:'Indovinato! 🎉', pi_wrong:'Sbagliato', pi_wasWord:(w)=>`La parola era: ${w}`,
+    pi_drawing:(n)=>`${n} sta disegnando…`, pi_round:(a,b)=>`Round ${a} di ${b}`,
+    pi_surrender:'Arrenditi', pi_youWin:'Hai vinto! 🎉', pi_winner:(n)=>`Ha vinto ${n}`,
+    pi_tie:'Parità!', pi_scores:'Punteggi',
   },
   en: {
     lobby: 'Lobby', back: 'Back', save: 'Save', cancel: 'Cancel',
@@ -123,6 +131,14 @@ export const STR = {
     lu_youWin:'You win! 🎉', lu_winner:(n)=>`${n} wins`,
     lu_retired:(n)=>`${n} gave up`, lu_noMove:(d)=>`You rolled ${d}: no move`,
     lu_rolled:(d)=>`Die: ${d} — pick a token`,
+    // pictionary
+    pi_you:'You', pi_wait:(n)=>`${n}'s turn`, pi_yourTurn:'It\'s your turn',
+    pi_draw:(w)=>`Draw: ${w}`, pi_send:'Send drawing', pi_undo:'Undo', pi_clear:'Clear',
+    pi_guessHint:'What is it?', pi_guessBtn:'Guess', pi_tries:(n)=>`Tries left: ${n}`,
+    pi_right:'Correct! 🎉', pi_wrong:'Wrong', pi_wasWord:(w)=>`The word was: ${w}`,
+    pi_drawing:(n)=>`${n} is drawing…`, pi_round:(a,b)=>`Round ${a} of ${b}`,
+    pi_surrender:'Give up', pi_youWin:'You win! 🎉', pi_winner:(n)=>`${n} wins`,
+    pi_tie:'Tie!', pi_scores:'Scores',
   }
 };
 

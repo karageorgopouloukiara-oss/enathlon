@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pictionary · Enathlon</title>
+<link rel="stylesheet" href="../../shared/theme.css">
+<style>
+  .wrap{width:100%;max-width:560px}
+  .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+  .gtitle{text-align:center;font-weight:900;font-size:20px;margin-bottom:4px}
+  .round{text-align:center;font-size:12px;color:#8fa3b5;margin-bottom:10px}
+  .scores{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:10px}
+  .schip{padding:5px 9px;border-radius:9px;background:var(--panel);font-weight:700;font-size:12px}
+  .schip.turn{outline:2px solid var(--lime)}
+  .schip.retired{opacity:.4;text-decoration:line-through}
+  .word{text-align:center;font-weight:900;font-size:18px;margin:8px 0;color:var(--lime)}
+  #canvas{width:100%;aspect-ratio:1/1;background:#fff;border-radius:10px;touch-action:none;display:block;cursor:crosshair}
+  #canvas.readonly{cursor:default}
+  .tools{display:flex;gap:8px;justify-content:center;align-items:center;flex-wrap:wrap;margin-top:10px}
+  .swatch{width:26px;height:26px;border-radius:50%;border:2px solid #0e1620;cursor:pointer}
+  .swatch.on{border-color:var(--lime);transform:scale(1.15)}
+  .wbtn{width:30px;height:30px;border-radius:8px;background:var(--panel);border:none;cursor:pointer;color:#fff;font-weight:800}
+  .wbtn.on{outline:2px solid var(--lime)}
+  .status{text-align:center;font-weight:800;margin:12px 0;min-height:24px}
+  .status .hl{color:var(--lime)}
+  .guess{display:flex;gap:8px;justify-content:center;margin-top:10px}
+  .guess input{flex:1;max-width:260px;padding:12px;border-radius:10px;border:none;background:var(--panel);color:#fff;font-weight:700}
+  .actions{display:flex;gap:10px;justify-content:center;margin-top:12px;flex-wrap:wrap}
+  .actions button, .guess button{padding:12px 18px;border:none;border-radius:12px;font-weight:800;cursor:pointer;background:var(--lime);color:#123}
+  .actions button.ghost{background:var(--panel);color:#fff}
+</style>
+</head>
+<body>
+  <div class="page center-screen">
+    <div class="panel wrap">
+      <div class="topbar">
+        <div class="logo"><div class="logo-text"><span class="ena">EN</span><span class="thl">Athl</span><span class="on">ON</span></div></div>
+        <button class="btn btn-ghost" onclick="location.href='../../lobby.html'">‹ <span data-t="lobby"></span></button>
+      </div>
+      <div class="gtitle">🎨 <span data-t="g_pictionary"></span></div>
+      <div class="round" id="round"></div>
+      <div class="scores" id="scores"></div>
+      <div class="word" id="word"></div>
+      <canvas id="canvas" width="1000" height="1000"></canvas>
+      <div class="tools" id="tools"></div>
+      <div class="status" id="status"></div>
+      <div class="guess" id="guessBox"></div>
+      <div class="actions" id="actions"></div>
+    </div>
+  </div>
+  <script type="module" src="./pictionary.js"></script>
+</body>
+</html>
