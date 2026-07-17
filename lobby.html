@@ -96,7 +96,10 @@
         <polygon points="22,220 88,228 88,292 22,304" fill="#5A8A3C"/>
         <polygon points="34,300 40,250 46,300" fill="#3D6B25"/><polygon points="66,288 71,248 76,288" fill="#3D6B25"/>
         <line x1="22" y1="218" x2="88" y2="226" stroke="#8B7355" stroke-width="3"/><line x1="55" y1="148" x2="55" y2="298" stroke="#8B7355" stroke-width="3"/>
-        <text id="t-city" x="20" y="316" font-size="8" fill="#fff" font-weight="700">☀ Atene</text>
+      </g>
+      <g transform="translate(22.41,101.85) rotate(24.86)">
+        <rect x="0" y="0" width="60" height="15" rx="4" fill="#006894"/>
+        <text id="t-city" x="30" y="11" text-anchor="middle" font-size="8" fill="#fff" font-weight="700">☀ Atene</text>
       </g>
       <ellipse cx="450" cy="406" rx="82" ry="13" fill="#3a2e22" opacity="0.35"/>
       <ellipse cx="225" cy="402" rx="62" ry="11" fill="#3a2e22" opacity="0.3"/>
@@ -169,7 +172,10 @@
         </div>
       </div>
       <!-- finta pubblicità: muro laterale destro -->
-      <div class="poster" style="right:0.5%;top:14%;width:14%;height:38%;transform:perspective(420px) rotateY(-16deg);">
+      <!-- rotateY dà lo scorcio (bordo vicino più alto) ma solo 3.9° di pendenza,
+           perché ruota attorno al centro dell'elemento; skewY aggiunge il resto
+           fino ai 12.2° del muro destro, che sfugge verso (510,156). -->
+      <div class="poster" style="right:0.5%;top:14%;width:14%;height:38%;transform:perspective(420px) rotateY(-16deg) skewY(-8.1deg);">
         <div class="poster-frame" style="background:linear-gradient(160deg,#006894,#00A0A3);">
           <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;text-align:center;padding:4px;">
             <div id="adDeal" style="font-size:8px;font-weight:800;letter-spacing:1px;opacity:.85;">OFFERTA PAUSA</div>
