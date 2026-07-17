@@ -6,11 +6,26 @@
 <title>Enathlon — Sala pausa</title>
 <link rel="stylesheet" href="shared/theme.css">
 <style>
-  .wrapper { display:flex; flex-direction:column; gap:14px; padding:18px; max-width:960px; margin:0 auto; }
+  /* Ingombro fisso sopra e sotto la stanza: 18+18 di padding del .wrapper,
+     58.5 di .logo-bar (34px di font + 6+6 di padding) e 14 di gap. Se cambia
+     il logo, va rifatto questo conto. */
+  :root { --chrome: 108.5px; }
+  .wrapper { display:flex; flex-direction:column; gap:14px; padding:18px; margin:0 auto; box-sizing:border-box; align-items:center; }
   .logo-bar { display:flex; align-items:center; justify-content:center; padding:6px 0; }
   .logo-text { font-size:34px; }
-  .room-wrapper { position:relative; background:#0d1117; border-radius:16px; overflow:hidden; }
+  /* La stanza prende tutta la larghezza disponibile, ma il tappo vero è
+     l'altezza: oltre un certo punto sfonderebbe sotto il bordo dello schermo,
+     quindi la limitiamo all'altezza libera riportata in larghezza col rapporto
+     900:520 della scena. */
+  .room-wrapper { position:relative; background:#0d1117; border-radius:16px; overflow:hidden; width:100%; max-width:calc((100dvh - var(--chrome)) * 900 / 520); container-type:inline-size; }
   .room-canvas { width:100%; display:block; }
+  /* La scala di .ui-scale è il rapporto fra la larghezza della stanza e le 900
+     unità di disegno. calc() NON sa dividere due lunghezze per ottenere un
+     numero puro, ma tan(atan2(a,b)) sì: atan2 restituisce l'angolo, la sua
+     tangente è a/b. 100cqw = larghezza di .room-wrapper (il container qui
+     sopra). Deliberatamente CSS e non JS: è layout, deve valere sempre e
+     subito, anche dove i moduli non partono e prima che Firestore risponda. */
+  .ui-scale { position:absolute; top:0; left:0; width:900px; height:520px; transform-origin:0 0; transform:scale(tan(atan2(100cqw, 900px))); pointer-events:none; }
   .layer { position:absolute; inset:0; }
   .av-wrap { position:absolute; display:flex; flex-direction:column; align-items:center; cursor:pointer; pointer-events:all; transition:transform .15s; }
   .av-wrap:hover { transform:scale(1.06); }
@@ -132,6 +147,12 @@
       <g transform="translate(704,320)"><rect x="0" y="0" width="48" height="42" rx="5" fill="#006894"/><rect x="4" y="42" width="40" height="12" rx="3" fill="#004f70"/></g>
     </svg>
 
+    <!-- Tutto ciò che sta sopra la scena vive in un riquadro di 900×520 px fissi,
+         le stesse unità del viewBox dell'SVG, scalato in blocco (vedi .ui-scale
+         nel CSS). Dentro qui i px NON sono pixel di schermo ma unità di disegno:
+         si scrivono alla dimensione di progetto e scalano da soli. -->
+    <div class="ui-scale">
+
     <div class="topbar">
       <div class="ctrl gear-wrap" style="background:transparent;box-shadow:none;padding:0;">
         <button class="gear-btn" id="gearBtn">⚙️</button>
@@ -172,10 +193,15 @@
         </div>
       </div>
       <!-- finta pubblicità: muro laterale destro -->
-      <!-- rotateY dà lo scorcio (bordo vicino più alto) ma solo 3.9° di pendenza,
-           perché ruota attorno al centro dell'elemento; skewY aggiunge il resto
-           fino ai 12.2° del muro destro, che sfugge verso (510,156). -->
-      <div class="poster" style="right:0.5%;top:14%;width:14%;height:38%;transform:perspective(420px) rotateY(-16deg) skewY(-8.1deg);">
+      <!-- Trapezio a specchio della finestra: bordo alto -24.87°, basso +12.39°
+           (la finestra ha +24.86° e -12.38°). Lato destro = vicino, altezza
+           piena; sinistro = lontano, schiacciato al 56.4%, col testo che si
+           rimpicciolisce di conseguenza.
+           È un'omografia, non perspective+rotateY: quella ruota attorno al
+           centro e fa convergere i due bordi della stessa quantità, qui invece
+           servono quantità diverse. Dentro .ui-scale l'elemento è sempre
+           126×197.6, quindi la matrice è costante. -->
+      <div class="poster" id="adPoster" style="right:0.5%;top:14%;width:14%;height:38%;transform-origin:0 0;transform:matrix3d(0.56437,-0.463497,0,-0.00345738,0,0.56437,0,0,0,0,1,0,0,58.4007,0,1);">
         <div class="poster-frame" style="background:linear-gradient(160deg,#006894,#00A0A3);">
           <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;text-align:center;padding:4px;">
             <div id="adDeal" style="font-size:8px;font-weight:800;letter-spacing:1px;opacity:.85;">OFFERTA PAUSA</div>
@@ -205,6 +231,8 @@
         <ellipse cx="90" cy="176" rx="70" ry="12" fill="#fff" stroke="#d0d0d0" stroke-width="2.5"/>
       </svg>
     </div>
+
+    </div><!-- /.ui-scale -->
   </div>
 </div>
 <div class="toast" id="toast"></div>
@@ -523,10 +551,15 @@ window.selWeapon=(el,w)=>{ weapon=w; document.querySelectorAll('.weapon-btn[data
 function projInner(w){ if(w==='axe')return'🪓'; if(w==='knife')return'🔪'; return '<svg width="22" height="40" viewBox="0 0 22 40"><polygon points="11,0 8,9 14,9" fill="#c0392b"/><rect x="9.5" y="8" width="3" height="20" fill="#2c3e50"/><polygon points="11,26 4,38 11,33 18,38" fill="#e74c3c"/></svg>'; }
 const finalRot={dart:0,axe:35,knife:-25}; const stuck=[];
 window.throwWeapon=()=>{ const layer=$('#throwLayer'),board=$('#dartboard'); const lR=layer.getBoundingClientRect(),bR=board.getBoundingClientRect();
-  const R=Math.min(bR.width,bR.height)/2*0.6, ang=Math.random()*Math.PI*2, dist=Math.random()*R;
-  const tx=bR.left-lR.left+bR.width/2+Math.cos(ang)*dist, ty=bR.top-lR.top+bR.height/2+Math.sin(ang)*dist;
+  // getBoundingClientRect misura in px di SCHERMO, ma left/top qui sotto sono
+  // unità di disegno dentro .ui-scale: k converte le une nelle altre. Senza
+  // questa divisione le freccette mancano il bersaglio appena la stanza non è
+  // larga esattamente 900px.
+  const k=lR.width/layer.offsetWidth;
+  const R=Math.min(bR.width,bR.height)/2*0.6/k, ang=Math.random()*Math.PI*2, dist=Math.random()*R;
+  const tx=(bR.left-lR.left+bR.width/2)/k+Math.cos(ang)*dist, ty=(bR.top-lR.top+bR.height/2)/k+Math.sin(ang)*dist;
   const p=document.createElement('div'); p.className='projectile'; p.innerHTML=projInner(weapon);
-  p.style.left=(lR.width/2)+'px'; p.style.top=(lR.height+30)+'px'; p.style.transform='translate(-50%,-50%) scale(2.4) rotate(-300deg)';
+  p.style.left=(layer.offsetWidth/2)+'px'; p.style.top=(layer.offsetHeight+30)+'px'; p.style.transform='translate(-50%,-50%) scale(2.4) rotate(-300deg)';
   layer.appendChild(p);
   requestAnimationFrame(()=>requestAnimationFrame(()=>{ p.style.transition='transform .42s, left .42s, top .42s'; p.style.left=tx+'px'; p.style.top=ty+'px'; p.style.transform='translate(-50%,-50%) scale(.7) rotate('+finalRot[weapon]+'deg)'; }));
   stuck.push(p); if(stuck.length>20){ stuck.shift().remove(); } };
