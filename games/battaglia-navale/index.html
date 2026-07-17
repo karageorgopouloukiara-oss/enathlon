@@ -153,11 +153,16 @@ async function runOnline(){
   function ensureDom(){ if(!placedDom){ buildGrids(fire); placedDom=true; } }
   window.startBattle=async()=>{ if(placeIdx<SHIPS.length)return; const cur=await store.getMatch(matchId); const ns=clone(cur.state||{}); ns.fleets=ns.fleets||{}; ns.shots=ns.shots||{}; ns.ready=ns.ready||{};
     ns.fleets[me.nick]=yourShips.map(z=>({k:z.k,n:z.n,cells:z.cells})); ns.shots[me.nick]=empty(); ns.ready[me.nick]=true;
-    const bothReady = ns.ready[me.nick] && ns.ready[opp];
     await store.updateMatch(matchId,{state:ns, turn: cur.players[0]});
     $('#placeCtrls').style.display='none'; $('#battleCtrls').style.display='flex'; };
   window.goLobbyOrReset=()=>location.href='../../lobby.html';
-  async function fire(i){ const cur=window.__cur; if(!cur||cur.status!=='active'||cur.turn!==me.nick)return; const st=cur.state; if(st.phase!=='battle')return;
+  async function fire(i){ const cur=window.__cur; if(!cur||cur.status!=='active'||cur.turn!==me.nick)return; const st=cur.state;
+    // La battaglia è cominciata quando ENTRAMBI hanno schierato: è la stessa
+    // condizione che usa render() qui sotto per sbloccare la griglia, quindi
+    // c'è UNA sola fonte di verità. Prima qui si leggeva st.phase==='battle',
+    // che nessuno scriveva mai: la lobby crea lo stato con phase:'placing' e
+    // startBattle() non l'avanzava, perciò il tiro era bloccato per sempre.
+    const ready=st.ready||{}; if(!ready[me.nick]||!ready[opp])return;
     const sh=(st.shots&&st.shots[opp])?[...st.shots[opp]]:empty(); if(sh[i])return;
     const fleet=(st.fleets&&st.fleets[opp])||[]; const hitShip=fleet.find(z=>z.cells.includes(i));
     sh[i]=hitShip?'hit':'miss';
