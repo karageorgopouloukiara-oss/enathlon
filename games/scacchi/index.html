@@ -6,7 +6,13 @@
   <title>Enathlon — Scacchi</title>
   <link rel="stylesheet" href="../../shared/theme.css">
   <style>
-    .wrap { width:100%; max-width:520px; }
+    /* Ingombro verticale fisso attorno alla scacchiera, misurato: topbar 57 +
+       titolo 39 + giocatori 94 + stato 36 + piede 59 = 285, più 44 di padding
+       del .panel e 36 del .page. Se si aggiunge o toglie un elemento sopra o
+       sotto la scacchiera, questo conto va rifatto. Il tetto di 880px è la
+       larghezza utile del .page (960 - 36 di padding - 44 del panel). */
+    :root { --chess-chrome: 365px; }
+    .wrap { width:100%; max-width:calc(min(100dvh - var(--chess-chrome), 880px) + 44px); }
     .topbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
     .gtitle { text-align:center; font-weight:900; font-size:20px; margin-bottom:12px; }
     .players { display:flex; gap:12px; margin-bottom:16px; }
@@ -17,10 +23,15 @@
     .vs { align-self:center; font-weight:900; color:#5a7a96; font-size:13px; }
     .status { text-align:center; font-weight:800; font-size:14px; min-height:22px; margin-bottom:14px; color:#cfe0ec; }
     .status .hl { color:var(--lime); }
-    .board { display:grid; grid-template-columns:repeat(8,1fr); width:360px; max-width:100%; aspect-ratio:1; margin:0 auto; border-radius:10px; overflow:hidden; border:3px solid rgba(255,255,255,0.10); }
+    /* grid-template-ROWS esplicito: senza, le righe sono implicite e prendono
+       l'altezza dal contenuto, quindi una traversa vuota collassa e le caselle
+       non sono quadrate. container-type serve a far scalare i glifi qui sotto. */
+    .board { display:grid; grid-template-columns:repeat(8,1fr); grid-template-rows:repeat(8,1fr); width:100%; aspect-ratio:1; margin:0 auto; border-radius:10px; overflow:hidden; border:3px solid rgba(255,255,255,0.10); container-type:inline-size; }
     .sq { display:flex; align-items:center; justify-content:center; position:relative; cursor:pointer; user-select:none; }
     .sq.light { background:#e9edf2; } .sq.dark { background:#5b7183; }
-    .sq .pc { font-size:30px; line-height:1; }
+    /* 30px su una scacchiera da 360 = 8.333% della sua larghezza. In cqw il
+       glifo cresce con la scacchiera invece di restare inchiodato a 30px. */
+    .sq .pc { font-size:8.333cqw; line-height:1; }
     .sq .pc.w { color:#fbfdff; text-shadow:0 1px 2px rgba(0,0,0,0.55); }
     .sq .pc.b { color:#1a2733; text-shadow:0 1px 1px rgba(255,255,255,0.25); }
     .sq.sel { box-shadow:inset 0 0 0 4px var(--lime); }
