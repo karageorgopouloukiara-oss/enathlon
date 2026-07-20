@@ -29,8 +29,16 @@ $('#oppName').textContent = oppNick;
 const dict = await loadDictionary(lang);           // blocca finché il dizionario è pronto
 const val = (l) => letterValue(lang, l);
 
-// INIT una sola volta, dallo sfidante (players[0]), se la partita è appena creata
-if (m0.state.phase === 'init' && m0.players[0] === me.nick){
+// INIT: prepara sacchetto, leggii e tabellone la prima volta che QUALCUNO apre
+// la partita appena creata. Prima era riservato a players[0] (lo sfidante): se
+// però apriva per primo l'altro giocatore (players[1]), l'init non partiva, la
+// fase restava 'init' e render() usciva subito lasciando lo schermo bloccato su
+// "Preparazione partita…" — niente tabellone né lettere. Il turno resta a
+// players[0] a prescindere da chi inizializza, quindi lo sfidante muove sempre
+// per primo. Se due aprono nello stesso istante l'ultima scrittura vince: senza
+// mosse ancora fatte, entrambi ri-renderizzano dallo stato canonico, nessuna
+// perdita. Vale anche per le partite già bloccate: le sblocca chiunque le apra.
+if (m0.state.phase === 'init'){
   const bag = shuffle(buildBag(lang));
   const racks = {};
   let ptr = 0;
