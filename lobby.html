@@ -38,6 +38,7 @@
   .dd-item:hover { background:#006894; color:#fff; } .dd-item.soon { opacity:.5; }
   .bubble { position:absolute; bottom:155px; left:50%; transform:translateX(-50%) scale(0); transform-origin:bottom center; background:#fff; border-radius:14px; padding:10px 12px; box-shadow:0 8px 24px rgba(0,0,0,.35); width:180px; text-align:center; z-index:50; transition:transform .3s cubic-bezier(.2,.9,.3,1.5); pointer-events:all; }
   .bubble.show { transform:translateX(-50%) scale(1); }
+  .bubble-float { top:30px; bottom:auto; }  /* fallback: chi ha sfidato non è più in stanza */
   .bubble::after { content:''; position:absolute; bottom:-9px; left:50%; transform:translateX(-50%); border-left:10px solid transparent; border-right:10px solid transparent; border-top:10px solid #fff; }
   .bubble .bg { font-size:13px; font-weight:900; color:#006894; } .bubble .bw { font-size:11px; font-weight:700; color:#888; margin:1px 0 8px; }
   .bubble .acts { display:flex; gap:6px; } .bubble .acts button { flex:1; border:none; border-radius:8px; padding:7px 4px; font-family:inherit; font-weight:900; font-size:11px; cursor:pointer; }
@@ -334,23 +335,58 @@ async function renderLeader(){
 }
 
 /* ---- colleghi (avatar nella sala) ---- */
-const SLOTS = [ {left:'14%',bottom:'21%'}, {left:'5%',bottom:'10%'}, {right:'14%',bottom:'21%'} ];
+// Presenza: la lobby "batte" ogni HEARTBEAT_MS scrivendo lastSeen sul proprio
+// profilo; è online (e quindi mostrato nella stanza) chi è stato visto negli
+// ultimi ONLINE_WINDOW_MS. Richiede lastSeen fra i campi ammessi in
+// firestore.rules, altrimenti il battito viene rifiutato e la stanza resta vuota.
+const HEARTBEAT_MS = 30000;
+const ONLINE_WINDOW_MS = 75000;
+
+// Disposizione B: due gruppi ai lati della macchinetta (centro sempre libero).
+// Gli online si spartiscono i due lati in modo bilanciato — indici pari a
+// sinistra, dispari a destra — e dentro ogni lato si sfalsano in profondità, dal
+// fronte-esterno al fondo-interno. Fino a 6 a dimensione piena; oltre, si
+// rimpiccioliscono (scale) per starci tutti.
+function computeLayout(n){
+  const scale = n <= 6 ? 1 : Math.max(0.55, 6 / n);
+  const side = (idxs, key) => idxs.map((idx, j) => {
+    const t = idxs.length === 1 ? 0.4 : j / (idxs.length - 1);
+    return { idx, scale, style: { [key]: (4 + 26 * t).toFixed(1) + '%',
+                                  bottom: (6 + 20 * t).toFixed(1) + '%' } };
+  });
+  const left = [], right = [];
+  for (let i = 0; i < n; i++) (i % 2 === 0 ? left : right).push(i);
+  const out = new Array(n);
+  side(left, 'left').forEach(s => out[s.idx] = s);
+  side(right, 'right').forEach(s => out[s.idx] = s);
+  return out;
+}
 let colleagues = [];
 
 async function loadColleagues(){
-  /* solo utenti reali registrati (escluso me) */
-  const players = (await store.listPlayers()).filter(p => p.nick !== me.nick);
-  colleagues = players.slice(0, 3);
+  /* solo utenti realmente ONLINE (battito recente), escluso me. Ordine stabile
+     per nick, così gli avatar non saltano di posto a ogni battito altrui. */
+  const now = Date.now();
+  colleagues = (await store.listPlayers())
+    .filter(p => p.nick !== me.nick)
+    .filter(p => p.lastSeen && now - p.lastSeen < ONLINE_WINDOW_MS)
+    .sort((a, b) => (a.nickKey || a.nick).localeCompare(b.nickKey || b.nick));
 }
 function renderAvatars(){
   const layer=$('#avatarLayer'); layer.innerHTML='';
+  const layout = computeLayout(colleagues.length);
   colleagues.forEach((c,i)=>{
-    const slot=SLOTS[i]; const w=document.createElement('div'); w.className='av-wrap';
-    Object.assign(w.style, slot);
-    w.innerHTML = `<div class="av-dropdown" id="dd${i}"></div><div class="av-svg">${avatarSVG(c)}</div><div class="av-name">${c.nick}</div>`;
+    const L=layout[i]; const w=document.createElement('div'); w.className='av-wrap';
+    w.dataset.nick = c.nick;                       // per agganciare il fumetto sfida
+    Object.assign(w.style, L.style);
+    const px = (base)=>Math.round(base*L.scale)+'px';
+    w.innerHTML = `<div class="av-dropdown" id="dd${i}"></div>`+
+      `<div class="av-svg" style="width:${px(92)};height:${px(148)}">${avatarSVG(c)}</div>`+
+      `<div class="av-name">${c.nick}</div>`;
     w.onclick=(e)=>{ e.stopPropagation(); openChallenge(i,c); };
     layer.appendChild(w);
   });
+  renderBubble();   // il fumetto deve sopravvivere ai re-render (i battiti sono frequenti)
 }
 function openChallenge(i,c){
   document.querySelectorAll('.av-dropdown').forEach(d=>d.classList.remove('open'));
@@ -420,7 +456,12 @@ function openChallenge(i,c){
           if(!lang) return;                 // annullata
         }
         const initState = g.id==='hangman' ? { secret:{}, rows:{}, done:{} }
-          : g.id==='battleship' ? { fleets:{}, shots:{}, ready:{}, phase:'placing' }
+          /* Niente 'phase' qui: la Battaglia Navale deriva la fase da 'ready'
+             (schierato / non schierato), che è l'unico campo che qualcuno
+             aggiorna davvero. Un phase:'placing' scritto qui e mai avanzato
+             teneva bloccato il tiro. Scrabble e Pictionary invece la fase la
+             gestiscono per davvero, quindi la loro resta. */
+          : g.id==='battleship' ? { fleets:{}, shots:{}, ready:{} }
           : g.id==='scrabble' ? { lang, phase:'init' }
           : g.id==='chess' ? { board: CHESS_START.slice(),
                                castling:{ wK:true, wQ:true, bK:true, bQ:true },
@@ -518,21 +559,31 @@ async function renderBadge(){
 $('#cupFg').onclick=async(e)=>{ e.stopPropagation(); const o=$('#ongoing'); if(o.classList.contains('show')) o.classList.remove('show'); else { await renderOngoing(); o.classList.add('show'); } };
 
 /* ---- sfide in arrivo (bolla) ---- */
-function showBubble(ch){
-  if(document.querySelector('.bubble')) return;
-  const slotIdx = 0; const w = $('#avatarLayer').children[slotIdx]; if(!w) return;
+// Il fumetto della sfida compare SOPRA l'avatar di chi l'ha lanciata (ch.from),
+// non più fisso a sinistra. Poiché i battiti di presenza fanno ri-renderizzare
+// gli avatar di continuo, non lo teniamo appeso a un avatar "usa e getta": la
+// sfida attiva sta in activeChallenge e renderBubble() la riattacca ogni volta.
+let activeChallenge = null;
+function renderBubble(){
+  document.querySelectorAll('.bubble').forEach(b=>b.remove());
+  const ch = activeChallenge; if(!ch) return;
   const g=gameById(ch.game);
   const b=document.createElement('div'); b.className='bubble';
   b.innerHTML=`<div class="bg">${g?g.icon+' '+t(g.key):ch.game}</div><div class="bw">${ch.from} ${tt('challenges')}</div>`+
     `<div class="acts"><button class="acc">${tt('accept')}</button><button class="dec">${tt('decline')}</button></div>`;
   b.onclick=(e)=>e.stopPropagation();
-  w.appendChild(b); requestAnimationFrame(()=>b.classList.add('show'));
-  b.querySelector('.acc').onclick=async()=>{ await store.removeChallenge(ch.id); toast(tt('accepted')(g?t(g.key):ch.game));
+  // sopra chi ha sfidato; se nel frattempo ha chiuso la lobby (non è tra gli
+  // avatar), il fumetto va in alto al centro così non lo si perde.
+  const w=[...document.querySelectorAll('#avatarLayer .av-wrap')].find(el=>el.dataset.nick===ch.from);
+  if(w) w.appendChild(b); else { b.classList.add('bubble-float'); $('#avatarLayer').appendChild(b); }
+  requestAnimationFrame(()=>b.classList.add('show'));
+  b.querySelector('.acc').onclick=async()=>{ activeChallenge=null; await store.removeChallenge(ch.id); toast(tt('accepted')(g?t(g.key):ch.game));
     if(g && ch.matchId) setTimeout(()=>location.href=g.path+'?match='+ch.matchId,500);
     else if(g && g.status==='ready') setTimeout(()=>location.href=g.path,400);
-    else b.remove(); };
-  b.querySelector('.dec').onclick=async()=>{ await store.removeChallenge(ch.id); toast(tt('declined')); b.remove(); };
+    else renderBubble(); };
+  b.querySelector('.dec').onclick=async()=>{ activeChallenge=null; await store.removeChallenge(ch.id); toast(tt('declined')); renderBubble(); };
 }
+function showBubble(ch){ if(activeChallenge) return; activeChallenge=ch; renderBubble(); }
 
 /* ---- macchina caffè ---- */
 const COFFEE={espresso:{c:'#2e1a0e',n:()=>L[getLang()].d1},lungo:{c:'#4a2a16',n:()=>L[getLang()].d2},americano:{c:'#6b4226',n:()=>L[getLang()].d3}};
@@ -566,6 +617,14 @@ window.throwWeapon=()=>{ const layer=$('#throwLayer'),board=$('#dartboard'); con
 window.clearDarts=()=>{ stuck.forEach(p=>p.remove()); stuck.length=0; toast(L[getLang()].cleared); };
 
 /* ---- boot + realtime ---- */
+// Battito di presenza: mi segno online adesso e poi ogni HEARTBEAT_MS finché la
+// lobby resta aperta. Il try/catch evita che un eventuale rifiuto (regole
+// Firestore senza il campo lastSeen) blocchi la pagina.
+async function beat(){ try { await store.updatePlayer(me.nick, { lastSeen: Date.now() }); }
+  catch(e){ console.warn('heartbeat lastSeen rifiutato — aggiornare firestore.rules?', e.message); } }
+await beat();
+setInterval(beat, HEARTBEAT_MS);
+
 await loadColleagues();
 applyLang();
 store.subscribePlayers(() => { loadColleagues().then(() => { renderAvatars(); renderLeader(); }); });
