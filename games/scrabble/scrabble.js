@@ -16,7 +16,14 @@ const me = await auth.current();
 if (!me || !matchId) location.href = '../../lobby.html';
 
 function shuffle(arr){ for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; } return arr; }
-function emptyBoard(){ return Array.from({length:15},()=>Array(15).fill(null)); }
+// La board è un array PIATTO di 225 (indice r*15+c), NON un 15×15 annidato:
+// Firestore rifiuta gli array di array (stesso motivo per cui Scacchi usa 64
+// celle in fila). Con la board annidata l'updateMatch dell'init lanciava
+// "Nested arrays are not supported", l'esecuzione si fermava prima di
+// subscribeMatch e la pagina restava sui "…" — su Firestore, non in locale.
+function emptyBoard(){ return new Array(225).fill(null); }
+// Vista 2D della board piatta, per il motore in board.js che ragiona a [r][c].
+function nest(flat){ return Array.from({length:15},(_,r)=>flat.slice(r*15, r*15+15)); }
 
 const m0 = await store.getMatch(matchId);
 if (!m0){ toast('Partita non trovata'); setTimeout(()=>location.href='../../lobby.html',1000); throw new Error('match not found'); }
@@ -65,7 +72,7 @@ function renderBoard(state){
   for (let r=0;r<15;r++) for (let c=0;c<15;c++){
     const sq = document.createElement('div'); sq.className='sq';
     const pend = pending.find(p=>p.r===r && p.c===c);
-    const cell = state.board[r][c] || (pend && {letter:pend.letter, blank:pend.blank});
+    const cell = state.board[r*15+c] || (pend && {letter:pend.letter, blank:pend.blank});
     if (cell){ sq.classList.add('tile'); if(pend) sq.classList.add('pending');
       sq.innerHTML = `<span class="l">${cell.letter}</span><span class="v">${cell.blank?0:val(cell.letter)}</span>`;
     } else {
@@ -111,7 +118,7 @@ function onSquare(r,c){
   if (!cur || cur.turn!==me.nick || cur.status!=='active') return;
   const existingPend = pending.findIndex(p=>p.r===r && p.c===c);
   if (existingPend>=0){ pending.splice(existingPend,1); renderBoard(cur.state); renderRack(cur.state); syncPlayBtn(); return; }
-  if (cur.state.board[r][c]) return;               // occupata da tessera confermata
+  if (cur.state.board[r*15+c]) return;             // occupata da tessera confermata
   if (selIdx===null){ toast(t('sc_pickTile')); return; }
   let letter = cur.state.racks[me.nick][selIdx]; let blank = false;
   if (letter===' '){ const ch=(prompt(t('sc_blankPrompt'))||'').trim().toUpperCase();
@@ -122,7 +129,7 @@ function onSquare(r,c){
 function syncPlayBtn(){ $('#btnPlay').disabled = !(cur.turn===me.nick && cur.status==='active' && pending.length>0); }
 
 function firstMoveTouchesCenter(){ return pending.some(p=>p.r===7 && p.c===7); }
-function boardIsEmpty(state){ return state.board.every(row=>row.every(c=>!c)); }
+function boardIsEmpty(state){ return state.board.every(c=>!c); }
 
 $('#btnRecall').onclick = () => { pending=[]; selIdx=null; renderBoard(cur.state); renderRack(cur.state); syncPlayBtn(); };
 
@@ -131,14 +138,14 @@ $('#btnPlay').onclick = async () => {
   // 1) prima mossa deve toccare il centro
   if (boardIsEmpty(cur.state) && !firstMoveTouchesCenter()){ toast(t('sc_center')); return; }
   // 2) validazione rigida di TUTTE le parole
-  const words = wordsFormed(cur.state.board, pending);
+  const words = wordsFormed(nest(cur.state.board), pending);
   if (!words.length){ toast(t('sc_noword')); return; }
   const bad = words.find(w => !isValid(dict, w.word));
   if (bad){ toast(t('sc_invalid') + ' ' + bad.word); return; }
   // 3) punteggio e aggiornamento stato
-  const gained = scoreMove(cur.state.board, pending, val);
+  const gained = scoreMove(nest(cur.state.board), pending, val);
   const state = structuredClone(cur.state);
-  for (const p of pending){ state.board[p.r][p.c] = { letter:p.letter, blank:p.blank }; }
+  for (const p of pending){ state.board[p.r*15+p.c] = { letter:p.letter, blank:p.blank }; }
   // rimuovi le tessere usate dal leggio e ripesca
   const usedIdx = new Set(pending.map(p=>p.rackIdx));
   state.racks[me.nick] = state.racks[me.nick].filter((_,i)=>!usedIdx.has(i));
