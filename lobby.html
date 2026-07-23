@@ -90,7 +90,7 @@
       <defs>
         <linearGradient id="floorGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#8B7355"/><stop offset="100%" stop-color="#A08060"/></linearGradient>
         <linearGradient id="machineGrad" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#1a2535"/><stop offset="40%" stop-color="#2C3E50"/><stop offset="100%" stop-color="#1a2535"/></linearGradient>
-        <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#87CEEB"/><stop offset="100%" stop-color="#C5E8F9"/></linearGradient>
+        <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1"><stop id="skyTop" offset="0%" stop-color="#87CEEB"/><stop id="skyMid" offset="55%" stop-color="#A8DCF0"/><stop id="skyBot" offset="100%" stop-color="#C5E8F9"/></linearGradient>
         <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="3" dy="6" stdDeviation="6" flood-color="rgba(0,0,0,0.3)"/></filter>
         <filter id="softShadow"><feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="rgba(0,0,0,0.2)"/></filter>
       </defs>
@@ -107,10 +107,12 @@
       <g>
         <polygon points="14,120 96,158 96,300 14,318" fill="#8B7355"/>
         <polygon points="22,132 88,164 88,292 22,304" fill="url(#skyGrad)"/>
-        <circle cx="70" cy="180" r="11" fill="#FFD700" opacity="0.9"/>
-        <ellipse cx="38" cy="180" rx="13" ry="5" fill="white" opacity="0.85"/><ellipse cx="43" cy="175" rx="8" ry="7" fill="white" opacity="0.85"/>
-        <polygon points="22,220 88,228 88,292 22,304" fill="#5A8A3C"/>
-        <polygon points="34,300 40,250 46,300" fill="#3D6B25"/><polygon points="66,288 71,248 76,288" fill="#3D6B25"/>
+        <g id="winStars" opacity="0"><circle cx="34" cy="150" r="1.1" fill="#fff"/><circle cx="46" cy="164" r="0.9" fill="#fff"/><circle cx="76" cy="152" r="1" fill="#fff"/><circle cx="30" cy="176" r="0.9" fill="#fff"/><circle cx="58" cy="145" r="1.1" fill="#fff"/><circle cx="82" cy="196" r="0.9" fill="#fff"/></g>
+        <circle id="winAstro" cx="70" cy="180" r="11" fill="#FFD700" opacity="0.9"/>
+        <circle id="winMoonBite" cx="66" cy="177" r="9" fill="#16325C" opacity="0"/>
+        <g id="winClouds"><ellipse cx="38" cy="180" rx="13" ry="5" fill="white" opacity="0.85"/><ellipse cx="43" cy="175" rx="8" ry="7" fill="white" opacity="0.85"/></g>
+        <polygon id="winHill" points="22,220 88,228 88,292 22,304" fill="#5A8A3C"/>
+        <polygon class="winTree" points="34,300 40,250 46,300" fill="#3D6B25"/><polygon class="winTree" points="66,288 71,248 76,288" fill="#3D6B25"/>
         <line x1="22" y1="218" x2="88" y2="226" stroke="#8B7355" stroke-width="3"/><line x1="55" y1="148" x2="55" y2="298" stroke="#8B7355" stroke-width="3"/>
       </g>
       <g transform="translate(22.41,101.85) rotate(24.86)">
@@ -276,18 +278,67 @@ function clock(){ const n=new Date(); const h=(n.getHours()%12)+n.getMinutes()/6
   const he=rot(h*30,9), me2=rot(m*6,15);
   $('#hHour').setAttribute('x2',he.x); $('#hHour').setAttribute('y2',he.y);
   $('#hMin').setAttribute('x2',me2.x); $('#hMin').setAttribute('y2',me2.y); }
-clock(); setInterval(clock,10000);
+/* ---- finestra: segue l'ora LOCALE di chi guarda (come l'orologio qui sopra) ---- */
+// Quattro fasce con la loro palette; sole e luna scorrono lungo un arco secondo
+// l'ora esatta. Coordinate scelte per restare dentro il vetro (il cielo va da
+// y≈132 a y≈228 dove inizia la collina): l'astro oscilla fra y 208 (basso) e
+// y 172 (alto), sorgendo a destra (x 72) e tramontando a sinistra (x 34).
+const SKY = {
+  alba:     ['#F79D65','#FDC489','#FFE0B5'],
+  giorno:   ['#87CEEB','#A8DCF0','#C5E8F9'],
+  tramonto: ['#7B4B8A','#E8705F','#FFC07A'],
+  notte:    ['#0B1D3A','#1A3358','#2A4A7B'],
+};
+const GROUND = {   // [collina, alberi] — si scuriscono verso sera
+  alba:     ['#4A7433','#33591F'],
+  giorno:   ['#5A8A3C','#3D6B25'],
+  tramonto: ['#3E5C2C','#2A401C'],
+  notte:    ['#22381A','#152510'],
+};
+const ASTRO_FILL = { alba:'#FF9A3C', giorno:'#FFD700', tramonto:'#FF6B35', notte:'#EDEAD6' };
+const CITY_ICON  = { alba:'☀', giorno:'☀', tramonto:'🌇', notte:'🌙' };
+
+function phaseFor(h){ return h<6 ? 'notte' : h<8 ? 'alba' : h<18 ? 'giorno' : h<21 ? 'tramonto' : 'notte'; }
+// Sole 6→21, luna 21→6 (con l'aggancio a mezzanotte): t va da 0 a 1 lungo l'arco.
+function astroPos(h){
+  const night = h >= 21 || h < 6;
+  const t = night ? ((h >= 21 ? h - 21 : h + 3) / 9) : ((h - 6) / 15);
+  return { night, x: 72 - 38*t, y: 208 - 36*Math.sin(Math.PI*t) };
+}
+function updateWindow(){
+  const d = new Date(), h = d.getHours() + d.getMinutes()/60;
+  const ph = phaseFor(h), [top,mid,bot] = SKY[ph], [hill,tree] = GROUND[ph];
+  $('#skyTop').setAttribute('stop-color',top);
+  $('#skyMid').setAttribute('stop-color',mid);
+  $('#skyBot').setAttribute('stop-color',bot);
+  $('#winHill').setAttribute('fill',hill);
+  document.querySelectorAll('.winTree').forEach(el=>el.setAttribute('fill',tree));
+  const a = astroPos(h), astro = $('#winAstro'), bite = $('#winMoonBite');
+  astro.setAttribute('cx',a.x.toFixed(1)); astro.setAttribute('cy',a.y.toFixed(1));
+  astro.setAttribute('r', a.night ? 9 : 11);
+  astro.setAttribute('fill', ASTRO_FILL[ph]);
+  // lo "spicchio" ritaglia la luna: solo di notte, altrimenti trasparente
+  bite.setAttribute('cx',(a.x-4).toFixed(1)); bite.setAttribute('cy',(a.y-3).toFixed(1));
+  bite.setAttribute('opacity', a.night ? 1 : 0);
+  $('#winStars').setAttribute('opacity', ph==='notte' ? 1 : 0);
+  $('#winClouds').setAttribute('opacity', ph==='notte' ? 0 : 1);
+  $('#t-city').textContent = CITY_ICON[ph] + ' ' + L[getLang()].city;
+}
+
+// NB: l'avvio di clock/updateWindow sta più in basso, dopo la tabella L —
+// updateWindow legge L per il nome della città e qui sarebbe ancora nella
+// zona morta temporale del const.
 
 /* ---- i18n strings (lobby-specifiche) ---- */
 const L = {
-  it:{ city:'☀ Atene', coffee:'CAFFÈ', d1:'Espresso', d2:'Lungo', d3:'Americano', throw:'Lancia:', dartTitle:'TIRO A SEGNO',
+  it:{ city:'Atene', coffee:'CAFFÈ', d1:'Espresso', d2:'Lungo', d3:'Americano', throw:'Lancia:', dartTitle:'TIRO A SEGNO',
        settings:'Impostazioni', language:'Lingua', edit:'✏️ Modifica avatar', out:'Esci', lead:'🏆 CLASSIFICA',
        challengeHdr:'Sfidalo a:', challenges:'ti sfida!', accept:'Accetta', decline:'Declina', ongTitle:'☕ Partite in corso',
        you:'Tu', yourTurn:'È il tuo turno', waiting:'In attesa', resume:'Riprendi', noOng:'Nessuna partita in corso',
        brewing:'Preparazione…', ready:'pronto!', cleared:'Bersaglio svuotato', sent:(n,g)=>'📨 Sfida a '+g+' inviata a '+n,
        accepted:g=>'✅ Sfida accettata: '+g, declined:'Sfida declinata', soon:'in arrivo!',
        adDeal:'OFFERTA PAUSA', adOn:'SUL CAFFÈ', adNote:'Solo durante<br>i buchi di lavoro!' },
-  en:{ city:'☀ Athens', coffee:'COFFEE', d1:'Espresso', d2:'Long Black', d3:'Americano', throw:'Throw:', dartTitle:'SHOOTING RANGE',
+  en:{ city:'Athens', coffee:'COFFEE', d1:'Espresso', d2:'Long Black', d3:'Americano', throw:'Throw:', dartTitle:'SHOOTING RANGE',
        settings:'Settings', language:'Language', edit:'✏️ Edit avatar', out:'Log out', lead:'🏆 LEADERBOARD',
        challengeHdr:'Challenge to:', challenges:'challenges you!', accept:'Accept', decline:'Decline', ongTitle:'☕ Ongoing games',
        you:'You', yourTurn:'Your turn', waiting:'Waiting', resume:'Resume', noOng:'No ongoing games',
@@ -297,9 +348,14 @@ const L = {
 };
 const tt = (k)=>{ const s=L[getLang()][k]; return s; };
 
+/* orologio della stanza + finestra: entrambi sull'ora locale, stesso intervallo */
+clock(); updateWindow();
+setInterval(()=>{ clock(); updateWindow(); },10000);
+
 function applyLang(){
   const s=L[getLang()];
-  $('#t-city').textContent=s.city; $('#t-coffee').textContent=s.coffee;
+  updateWindow();   // scrive #t-city con l'emoji della fascia oraria + la città
+  $('#t-coffee').textContent=s.coffee;
   $('#t-d1').textContent=s.d1; $('#t-d2').textContent=s.d2; $('#t-d3').textContent=s.d3;
   $('#t-throw').textContent=s.throw; $('#t-clear').title=getLang()==='it'?'Svuota':'Clear';
   document.querySelector('[data-t=dartTitle]').textContent=s.dartTitle;
