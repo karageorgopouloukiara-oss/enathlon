@@ -20,3 +20,16 @@ export const FIREBASE_CONFIG = {
   messagingSenderId: "425498999165",
   appId: "1:425498999165:web:7299294eb14c4a8fa9b414"
 };
+
+/* 3) EMAILJS: notifiche email "tocca a te" (il sito è statico, quindi l'invio
+   passa da EmailJS, chiamato dal browser). Lascia null per DISATTIVARE — tutto
+   il resto funziona lo stesso, semplicemente non parte nessuna email.
+   Per attivarlo:
+     1. crea un account gratuito su emailjs.com
+     2. aggiungi un "Email Service" (collega la tua email) → copia il Service ID
+     3. crea un "Email Template" con destinatario {{to_email}} e nel corpo le
+        variabili {{to_name}}, {{game}}, {{link}} → copia il Template ID
+     4. in Account → copia la "Public Key"
+     5. incolla i tre codici qui sotto e togli il commento. */
+export const EMAILJS = null;
+// export const EMAILJS = { serviceId: 'service_xxx', templateId: 'template_xxx', publicKey: 'xxxxxxxxxxxxxx' };

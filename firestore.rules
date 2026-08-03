@@ -15,7 +15,7 @@ service cloud.firestore {
     match /players/{nick} {
       allow read: if true;
       allow create, update: if request.resource.data.keys().hasOnly(
-        ['nick','nickKey','pinHash','animal','shirt','pants','points','createdAt']);
+        ['nick','nickKey','pinHash','animal','shirt','pants','points','createdAt','lastSeen','email']);
       allow delete: if false;
     }
 

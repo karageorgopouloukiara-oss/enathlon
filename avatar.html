@@ -39,6 +39,11 @@
             <div class="cb"><label data-t="shirt"></label><div class="sw" id="shirt"></div></div>
             <div class="cb"><label data-t="pants"></label><div class="sw" id="pants"></div></div>
           </div>
+          <div class="cb"><label data-t="email"></label>
+            <input id="email" type="email" placeholder="nome@azienda.it" autocomplete="email"
+              style="width:100%;box-sizing:border-box;padding:9px 11px;border-radius:10px;border:2px solid #2a4456;background:var(--panel-2);color:#eaf2f6;font-family:inherit;font-size:14px" />
+            <div style="font-size:10px;color:var(--text-mut);margin-top:5px" data-t="emailHint"></div>
+          </div>
           <button class="btn btn-primary" style="width:100%" id="saveBtn" data-t="save"></button>
         </div>
       </div>
@@ -58,6 +63,7 @@
     const me = await auth.current();
     if(!me){ location.href='index.html'; }
     const av = { nick:me.nick, animal:me.animal, shirt:me.shirt, pants:me.pants };
+    $('#email').value = me.email || '';
 
     function render(){
       $('#prev').innerHTML = avatarSVG(av);
@@ -70,7 +76,12 @@
         b.onclick=()=>{ av.animal=k; grid(); render(); }; g.appendChild(b); }); }
     function sw(id,key){ const c=$('#'+id); c.innerHTML=''; AVATAR_COLORS.forEach(col=>{ const s=document.createElement('div'); s.className='swatch'+(col===av[key]?' active':''); s.style.background=col;
       s.onclick=()=>{ av[key]=col; c.querySelectorAll('.swatch').forEach(x=>x.classList.remove('active')); s.classList.add('active'); render(); }; c.appendChild(s); }); }
-    $('#saveBtn').onclick = async () => { await store.updatePlayer(av.nick, { animal:av.animal, shirt:av.shirt, pants:av.pants }); toast('✅'); setTimeout(()=>location.href='index.html',500); };
+    $('#saveBtn').onclick = async () => {
+      const email = $('#email').value.trim();
+      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { toast('⚠️ '+t('emailBad')); return; }
+      await store.updatePlayer(av.nick, { animal:av.animal, shirt:av.shirt, pants:av.pants, email });
+      toast('✅'); setTimeout(()=>location.href='index.html',500);
+    };
 
     grid(); sw('shirt','shirt'); sw('pants','pants'); render();
   </script>
